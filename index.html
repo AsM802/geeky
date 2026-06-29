@@ -1,0 +1,367 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Geeky — The Intellectual Self-Learning Platform</title>
+  <meta name="description" content="Credential-blind, AI-powered intellectual self-learning platform bringing university-grade curricula, active recall, and academic debate to everyone.">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+  <div class="app-container">
+    <!-- Navigation Header -->
+    <nav class="navbar" id="geeky-navbar">
+      <div class="logo-container" id="nav-logo" onclick="switchView('agora')">
+        <span class="logo-icon">🏛️</span>
+        <span class="logo-text">GEEKY</span>
+        <span class="logo-tagline">Intellectual Gymnasium</span>
+      </div>
+
+      <ul class="nav-links">
+        <li class="nav-item active" id="nav-agora" onclick="switchView('agora')">
+          <span>🏛️</span> Agora
+        </li>
+        <li class="nav-item" id="nav-codex" onclick="switchView('codex')">
+          <span>📜</span> Codex Library
+        </li>
+        <li class="nav-item" id="nav-recall" onclick="switchView('recall')">
+          <span>🧠</span> Active Recall
+        </li>
+        <li class="nav-item" id="nav-debate" onclick="switchView('debate')">
+          <span>🏟️</span> Amphitheatre
+        </li>
+        <li class="nav-item" id="nav-profile" onclick="switchView('profile')">
+          <span>🎖️</span> Profile
+        </li>
+      </ul>
+
+      <div class="header-actions">
+        <div class="streak-badge" id="streak-indicator" title="Current Daily Streak">
+          <span>🔥</span> <span id="streak-count">14</span> Days
+        </div>
+        <button class="theme-toggle" id="theme-toggle-btn" onclick="toggleTheme()" title="Toggle Dark/Light Mode">
+          🌙
+        </button>
+      </div>
+    </nav>
+
+    <!-- Main Content Container -->
+    <main class="main-content" id="main-app-content">
+
+      <!-- ZONE 1: AGORA (HOME) -->
+      <section id="view-agora" class="view-section active">
+        <div class="section-header">
+          <h1 class="section-title">The Agora</h1>
+          <p class="section-subtitle">Your central hub for daily intellectual discourse and active learning.</p>
+        </div>
+
+        <div class="agora-grid">
+          <div class="main-column">
+            <!-- Today's Idea Widget -->
+            <div class="idea-card" id="todays-idea-card">
+              <span class="card-tag">Today's Concept • Philosophy</span>
+              <p class="idea-quote" id="idea-quote-text">"An unexamined life is not worth living. Virtue is knowledge, and true wisdom lies in knowing that you know nothing."</p>
+              <p class="idea-author" id="idea-author-text">— Socrates (The Socratic Method)</p>
+              <button class="action-btn" id="study-idea-btn" onclick="startSubjectStudy('ancient-philosophy')">
+                <span>⚡</span> Deep Dive into Ancient Philosophy
+              </button>
+            </div>
+
+            <!-- Quick Nav Grid -->
+            <div class="nav-quadrant">
+              <div class="quad-card" onclick="switchView('codex')">
+                <div class="quad-icon">📜</div>
+                <div class="quad-title">Browse Codex</div>
+                <div class="quad-desc">Explore 200+ university-grade curricula</div>
+              </div>
+              <div class="quad-card" onclick="switchView('recall')">
+                <div class="quad-icon">⚡</div>
+                <div class="quad-title">Quick Revise</div>
+                <div class="quad-desc">5-minute spaced repetition burst</div>
+              </div>
+              <div class="quad-card" onclick="switchView('debate')">
+                <div class="quad-icon">🏟️</div>
+                <div class="quad-title">Debate Arena</div>
+                <div class="quad-desc">Engage in structured academic discourse</div>
+              </div>
+              <div class="quad-card" onclick="switchView('profile')">
+                <div class="quad-icon">🎓</div>
+                <div class="quad-title">Scholarly Rank</div>
+                <div class="quad-desc">Check global position & achievements</div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Sidebar Column -->
+          <div class="feed-column">
+            <div class="sidebar-card">
+              <h3 class="sidebar-title">⚡ Scholar Activity Feed</h3>
+              <div class="activity-item">
+                <span class="activity-icon">🏆</span>
+                <div class="activity-text">
+                  <strong>You</strong> unlocked the <em>Dialectician</em> badge in Ancient Ethics.
+                  <span class="activity-time">2 hours ago</span>
+                </div>
+              </div>
+              <div class="activity-item">
+                <span class="activity-icon">🔥</span>
+                <div class="activity-text">
+                  Streak extended to <strong>14 Days</strong>! Shield protection active.
+                  <span class="activity-time">Yesterday</span>
+                </div>
+              </div>
+              <div class="activity-item">
+                <span class="activity-icon">💬</span>
+                <div class="activity-text">
+                  <strong>Hypatia_Alexandria</strong> replied to your motion in <em>Quantum Ethics</em>.
+                  <span class="activity-time">1 day ago</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ZONE 2: CODEX (SUBJECTS LIBRARY & DETAIL) -->
+      <section id="view-codex" class="view-section">
+        <div class="section-header">
+          <h1 class="section-title">The Codex Library</h1>
+          <p class="section-subtitle">Curated university-grade curricula structured into digital manuscripts.</p>
+        </div>
+
+        <!-- Domain Filters -->
+        <div class="domain-filters" id="domain-filters-container">
+          <button class="filter-chip active" onclick="filterDomain('all')">All Domains</button>
+          <button class="filter-chip" onclick="filterDomain('Philosophy & Ethics')">Philosophy & Ethics</button>
+          <button class="filter-chip" onclick="filterDomain('Physics & Cosmos')">Physics & Cosmos</button>
+          <button class="filter-chip" onclick="filterDomain('Computer Science')">Computer Science</button>
+          <button class="filter-chip" onclick="filterDomain('History & Civilisations')">History & Civilisations</button>
+        </div>
+
+        <!-- Subjects Grid View -->
+        <div class="subjects-grid" id="subjects-grid-container">
+          <!-- Dynamically Rendered via JS -->
+        </div>
+
+        <!-- Subject Detail View (Hidden by default) -->
+        <div class="manuscript-view" id="subject-detail-view" style="display: none;">
+          <div class="back-link" onclick="hideSubjectDetail()">
+            ← Return to Library Catalogue
+          </div>
+          <div class="subject-header">
+            <div>
+              <span class="subject-domain" id="detail-domain">Philosophy</span>
+              <h2 class="section-title" id="detail-title">Ancient Greek Philosophy</h2>
+              <p class="section-subtitle" id="detail-desc">From Thales to Aristotle: tracing the origins of Western metaphysics, epistemology, and ethics.</p>
+            </div>
+            <div class="subject-icon" id="detail-icon">🏛️</div>
+          </div>
+
+          <div style="margin-top: 1.5rem;">
+            <div style="display:flex; justify-content:space-between; font-size:0.9rem; color:var(--text-secondary);">
+              <span>Curriculum Completion</span>
+              <span id="detail-progress-pct">65%</span>
+            </div>
+            <div class="progress-bar-container">
+              <div class="progress-bar-fill" id="detail-progress-fill" style="width: 65%;"></div>
+            </div>
+          </div>
+
+          <h3 class="sidebar-title" style="margin-top: 2.5rem;">Illuminated Sub-topics Curriculum</h3>
+          <div class="curriculum-list" id="curriculum-list-container">
+            <!-- Dynamically Rendered -->
+          </div>
+        </div>
+      </section>
+
+      <!-- ZONE 3: ACTIVE RECALL ENGINE -->
+      <section id="view-recall" class="view-section">
+        <div class="section-header">
+          <h1 class="section-title">Active Recall Engine</h1>
+          <p class="section-subtitle">Automated SM-2 spaced repetition flashcards and adaptive difficulty quizzes.</p>
+        </div>
+
+        <div class="recall-tabs">
+          <button class="tab-btn active" id="tab-flashcards" onclick="switchRecallTab('flashcards')">
+            🎴 Flashcards Burst
+          </button>
+          <button class="tab-btn" id="tab-quiz" onclick="switchRecallTab('quiz')">
+            📝 Adaptive Quiz
+          </button>
+        </div>
+
+        <!-- Flashcard Engine Container -->
+        <div id="recall-flashcards-container">
+          <div class="flashcard-wrapper">
+            <div class="flashcard-inner" id="flashcard-card" onclick="flipCard()">
+              <div class="flashcard-front">
+                <span class="card-type-tag" id="card-type">Concept • Philosophy</span>
+                <h2 class="card-prompt" id="card-question">What is the core distinction between Epistemology and Metaphysics?</h2>
+                <p class="card-hint">Click card to reveal answer</p>
+              </div>
+              <div class="flashcard-back">
+                <span class="card-type-tag">Answer Key</span>
+                <p class="card-prompt" id="card-answer" style="font-size:1.2rem;">Epistemology is the study of knowledge and belief justification ("how we know"), whereas Metaphysics is the study of fundamental reality and existence ("what exists").</p>
+              </div>
+            </div>
+          </div>
+
+          <div class="sm2-controls" id="sm2-controls-panel" style="display: none;">
+            <button class="sm2-btn sm2-again" onclick="rateFlashcard('again')">Repeat (Again)</button>
+            <button class="sm2-btn sm2-hard" onclick="rateFlashcard('hard')">Challenging (Hard)</button>
+            <button class="sm2-btn sm2-good" onclick="rateFlashcard('good')">Mastered (Good)</button>
+          </div>
+        </div>
+
+        <!-- Quiz Engine Container (Hidden by default) -->
+        <div id="recall-quiz-container" style="display: none;">
+          <div class="quiz-container">
+            <div style="display:flex; justify-content:space-between; margin-bottom:1rem; font-size:0.9rem; color:var(--text-secondary);">
+              <span>Question <span id="quiz-q-num">1</span> of 3</span>
+              <span>Difficulty: <strong style="color:var(--accent-gold-light);" id="quiz-difficulty">Adaptive (Medium)</strong></span>
+            </div>
+            <h2 class="quiz-question" id="quiz-question-text">Which philosopher proposed the 'Allegory of the Cave' to illustrate the theory of Forms?</h2>
+            <div class="options-grid" id="quiz-options-container">
+              <!-- Dynamically rendered options -->
+            </div>
+            <div id="quiz-feedback-box" style="display:none; padding:1rem; border-radius:var(--radius-sm); margin-bottom:1.5rem;"></div>
+            <button class="action-btn" id="next-quiz-btn" style="display:none; width:100%; justify-content:center;" onclick="nextQuestion()">
+              Next Question →
+            </button>
+          </div>
+        </div>
+      </section>
+
+      <!-- ZONE 4: AMPHITHEATRE (DEBATE ARENA) -->
+      <section id="view-debate" class="view-section">
+        <div class="section-header">
+          <h1 class="section-title">The Amphitheatre</h1>
+          <p class="section-subtitle">Structured academic debate arena. Present motions, support arguments, or post rebuttals.</p>
+        </div>
+
+        <div class="debate-layout">
+          <div class="main-column">
+            <!-- Create Debate Card -->
+            <div class="create-debate-card">
+              <h3 class="sidebar-title">⚡ Present a Motion for Discourse</h3>
+              <textarea class="debate-textarea" id="new-motion-input" placeholder="Frame an academic motion or argument (e.g., 'Resolved: Artificial General Intelligence requires embodiment to achieve true semantic understanding')..."></textarea>
+              <div style="display:flex; justify-content:space-between; align-items:center;">
+                <select id="debate-tag-select" style="padding:0.5rem; background:var(--bg-card); color:var(--text-primary); border:1px solid var(--border-subtle); border-radius:4px;">
+                  <option value="#Philosophy">#Philosophy</option>
+                  <option value="#QuantumPhysics">#QuantumPhysics</option>
+                  <option value="#Ethics">#Ethics</option>
+                  <option value="#ComputerScience">#ComputerScience</option>
+                </select>
+                <button class="action-btn" id="post-debate-btn" onclick="postNewDebate()">Publish Motion</button>
+              </div>
+            </div>
+
+            <!-- Debate Feed -->
+            <div id="debate-feed-container">
+              <!-- Dynamically Rendered -->
+            </div>
+          </div>
+
+          <!-- Trending Topics Sidebar -->
+          <div class="feed-column">
+            <div class="sidebar-card">
+              <h3 class="sidebar-title">🔥 Actively Debated Motions</h3>
+              <div class="activity-item">
+                <div class="activity-text">
+                  <strong>#QuantumEthics</strong><br>
+                  <em>Is deterministic physics compatible with moral responsibility?</em>
+                  <span class="activity-time">42 Arguments • 180 Votes</span>
+                </div>
+              </div>
+              <div class="activity-item">
+                <div class="activity-text">
+                  <strong>#AIPhilosophy</strong><br>
+                  <em>Can large language models possess genuine intentionality?</em>
+                  <span class="activity-time">89 Arguments • 312 Votes</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ZONE 5: SCHOLAR PROFILE & CODEX -->
+      <section id="view-profile" class="view-section">
+        <div class="section-header">
+          <h1 class="section-title">Scholarly Profile</h1>
+          <p class="section-subtitle">Your personal Codex recording intellectual milestones, XP progression, and academic rank.</p>
+        </div>
+
+        <div class="profile-banner">
+          <div class="profile-avatar-lg">🏛️</div>
+          <div class="profile-details">
+            <h2 class="profile-name">Scholar Agniv</h2>
+            <span class="profile-rank">Title: Apprentice Philosopher</span>
+            <div style="margin-top: 1rem; max-width: 400px;">
+              <div style="display:flex; justify-content:space-between; font-size:0.85rem; color:var(--text-secondary);">
+                <span>Level Progress (Level 12)</span>
+                <span id="user-xp-display">4,850 / 5,000 XP</span>
+              </div>
+              <div class="progress-bar-container">
+                <div class="progress-bar-fill" style="width: 97%;"></div>
+              </div>
+            </div>
+          </div>
+          <div style="text-align:right;">
+            <div style="font-size:0.85rem; color:var(--text-muted); text-transform:uppercase;">Global Academic Rank</div>
+            <div style="font-family:var(--font-heading); font-size:2.4rem; color:var(--accent-gold-light); font-weight:900;" id="user-global-rank">#12,344</div>
+            <div style="font-size:0.8rem; color:var(--text-secondary);">Top 2.5% Globally</div>
+          </div>
+        </div>
+
+        <div class="stats-grid">
+          <div class="stat-card">
+            <div class="stat-val" id="stat-subjects">14</div>
+            <div class="stat-lbl">Subjects Studied</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-val" id="stat-quiz-score">94%</div>
+            <div class="stat-lbl">Avg Quiz Score</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-val" id="stat-flashcards">420</div>
+            <div class="stat-lbl">Cards Revised</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-val" id="stat-debates">18</div>
+            <div class="stat-lbl">Debates Won</div>
+          </div>
+        </div>
+
+        <h2 class="section-title" style="font-size:1.5rem; margin-bottom:1.5rem;">Unlocked Achievements & Badges</h2>
+        <div class="achievements-shelf">
+          <div class="badge-card">
+            <div class="badge-icon">📜</div>
+            <div class="badge-title">First Scroll</div>
+            <div class="badge-desc">Completed first university-grade lesson</div>
+          </div>
+          <div class="badge-card">
+            <div class="badge-icon">🏛️</div>
+            <div class="badge-title">Dialectician</div>
+            <div class="badge-desc">Won 10 community-voted academic debates</div>
+          </div>
+          <div class="badge-card">
+            <div class="badge-icon">🌌</div>
+            <div class="badge-title">Polymath</div>
+            <div class="badge-desc">Studied across 5 different domain faculties</div>
+          </div>
+          <div class="badge-card">
+            <div class="badge-icon">🔮</div>
+            <div class="badge-title">Oracle</div>
+            <div class="badge-desc">Achieved 100% on 10 consecutive adaptive quizzes</div>
+          </div>
+        </div>
+      </section>
+
+    </main>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>

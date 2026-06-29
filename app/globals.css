@@ -1,0 +1,57 @@
+@import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@500;700;900&family=Inter:wght@300;400;500;600;700&family=Playfair+Display:ital,wght@0,600;0,700;1,400&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --bg-primary: #1A1A2E;
+  --bg-secondary: #16213E;
+  --bg-card: #0F3460;
+  --text-primary: #E8DCC8;
+  --text-secondary: #A0B2C6;
+  --accent-gold: #B8860B;
+  --accent-gold-light: #D4AF37;
+  --border-gold: rgba(184, 134, 11, 0.4);
+  --border-subtle: rgba(255, 255, 255, 0.08);
+}
+
+.light {
+  --bg-primary: #F7F4EF;
+  --bg-secondary: #EFE9DF;
+  --bg-card: #FFFFFF;
+  --text-primary: #1A1A2E;
+  --text-secondary: #4A5568;
+  --accent-gold: #996515;
+  --accent-gold-light: #B8860B;
+  --border-gold: rgba(153, 101, 21, 0.3);
+  --border-subtle: rgba(0, 0, 0, 0.08);
+}
+
+body {
+  background-color: var(--bg-primary);
+  color: var(--text-primary);
+  font-family: 'Inter', sans-serif;
+  min-height: 100vh;
+}
+
+.font-heading {
+  font-family: 'Cinzel', 'Playfair Display', serif;
+}
+
+.perspective-1000 {
+  perspective: 1000px;
+}
+
+.transform-style-3d {
+  transform-style: preserve-3d;
+}
+
+.backface-hidden {
+  -webkit-backface-visibility: hidden;
+  backface-visibility: hidden;
+}
+
+.rotate-y-180 {
+  transform: rotateY(180deg);
+}
