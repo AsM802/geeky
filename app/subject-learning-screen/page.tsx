@@ -226,26 +226,23 @@ function SubjectLearningContent() {
   const searchParams = useSearchParams();
   const subjectSlug = searchParams.get('s') || 'philosophy';
   
-  const [currentSubject, setCurrentSubject] = useState<SubjectDetail | null>(null);
-  const [loading, setLoading] = useState(true);
+  // Use the local database record as the initial state so the page renders instantly
+  const [currentSubject, setCurrentSubject] = useState<SubjectDetail | null>(
+    subjectsDatabase[subjectSlug] || subjectsDatabase['philosophy']
+  );
   const [activeTab, setActiveTab] = useState<'overview' | 'videos' | 'papers' | 'blogs' | 'quizzes' | 'flashcards'>('overview');
 
   React.useEffect(() => {
-    setLoading(true);
+    // Silently fetch progress updates from MongoDB in the background
     fetch(`/api/subjects?s=${subjectSlug}`)
       .then((res) => res.json())
       .then((data) => {
-        if (!data.error) {
+        if (data && !data.error) {
           setCurrentSubject(data);
         }
-        setLoading(false);
       })
-      .catch(() => setLoading(false));
+      .catch(() => {});
   }, [subjectSlug]);
-
-  if (loading) {
-    return <div className="p-8 text-center text-[#D4AF37] font-heading">Consulting the library scrolls...</div>;
-  }
 
   if (!currentSubject) {
     return <div className="p-8 text-center text-red-400 font-heading">Subject not found in the archives.</div>;
