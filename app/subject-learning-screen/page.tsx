@@ -233,11 +233,16 @@ function SubjectLearningContent() {
   const [activeTab, setActiveTab] = useState<'overview' | 'videos' | 'papers' | 'blogs' | 'quizzes' | 'flashcards'>('overview');
 
   React.useEffect(() => {
-    // Silently fetch progress updates from MongoDB in the background
+    // Immediately load the local fallback first for instant, zero-delay UI switching
+    const localData = subjectsDatabase[subjectSlug] || subjectsDatabase['philosophy'];
+    setCurrentSubject(localData);
+
+    // Silently fetch dynamic progress from MongoDB in the background
     fetch(`/api/subjects?s=${subjectSlug}`)
       .then((res) => res.json())
       .then((data) => {
-        if (data && !data.error) {
+        // Only update if the database returned a valid populated subject document
+        if (data && data.slug && data.title && !data.error) {
           setCurrentSubject(data);
         }
       })
