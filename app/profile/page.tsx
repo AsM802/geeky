@@ -71,7 +71,7 @@ export default function ProfilePage() {
           <div className="bg-[#16213E] border border-white/10 hover:border-[#B8860B] p-6 rounded-xl text-center space-y-2 transition-all">
             <span className="text-4xl block mb-2">🏛️</span>
             <h4 className="font-bold text-[#E8DCC8]">Dialectician</h4>
-            <p class="text-xs text-[#A0B2C6]">Won 10 community-voted academic debates</p>
+            <p className="text-xs text-[#A0B2C6]">Won 10 community-voted academic debates</p>
           </div>
 
           <div className="bg-[#16213E] border border-white/10 hover:border-[#B8860B] p-6 rounded-xl text-center space-y-2 transition-all">
