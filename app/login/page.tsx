@@ -3,14 +3,44 @@
 import React, { useState } from 'react';
 import Link from 'next/link';
 
+import { useRouter } from 'next/navigation';
+
 export default function LoginPage() {
+  const router = useRouter();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [error, setError] = useState('');
+  const [loading, setLoading] = useState(false);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    alert('Logged in successfully as Scholar!');
+    setError('');
+    setLoading(true);
+
+    try {
+      const res = await fetch('/api/auth/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, password }),
+      });
+      const data = await res.json();
+
+      if (!res.ok) {
+        setError(data.error || 'Authentication failed');
+      } else {
+        localStorage.setItem('geeky_session', JSON.stringify(data.user));
+        alert('Welcome back to the Gymnasium!');
+        router.push('/');
+        // Trigger a custom event to force layout to reload session
+        window.dispatchEvent(new Event('storage'));
+      }
+    } catch (err) {
+      setError('Network connection error. Try again.');
+    } finally {
+      setLoading(false);
+    }
   };
+
 
   return (
     <div className="min-h-[80vh] flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8">
@@ -22,6 +52,12 @@ export default function LoginPage() {
           <h2 className="font-heading text-3xl font-bold text-white">Welcome Back to Geeky</h2>
           <p className="text-xs text-[#A0B2C6]">Enter your scholarly credentials to access your Codex and active streaks.</p>
         </div>
+
+        {error && (
+          <div className="bg-red-500/15 border border-red-500/30 text-red-400 text-xs px-3 py-2 rounded-lg text-center font-semibold">
+            {error}
+          </div>
+        )}
 
         <form className="mt-8 space-y-6" onSubmit={handleSubmit}>
           <div className="space-y-4">
@@ -59,9 +95,10 @@ export default function LoginPage() {
 
           <button
             type="submit"
-            className="w-full py-3 bg-gradient-to-r from-[#B8860B] to-[#D4AF37] text-[#1A1A2E] font-bold rounded-lg hover:brightness-110 transition-all text-sm uppercase tracking-wider shadow-lg"
+            disabled={loading}
+            className="w-full py-3 bg-gradient-to-r from-[#B8860B] to-[#D4AF37] text-[#1A1A2E] font-bold rounded-lg hover:brightness-110 disabled:opacity-50 transition-all text-sm uppercase tracking-wider shadow-lg"
           >
-            Sign In to Gymnasium
+            {loading ? 'Authenticating...' : 'Sign In to Gymnasium'}
           </button>
         </form>
 

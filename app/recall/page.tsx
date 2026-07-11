@@ -48,18 +48,50 @@ const quizQuestions = [
 
 export default function RecallPage() {
   const [activeTab, setActiveTab] = useState<'flashcards' | 'quiz'>('flashcards');
+  const [flashcards, setFlashcards] = useState<any[]>([]);
   const [cardIdx, setCardIdx] = useState(0);
   const [isFlipped, setIsFlipped] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [subjectSlug, setSubjectSlug] = useState('philosophy');
 
   const [quizIdx, setQuizIdx] = useState(0);
   const [selectedOption, setSelectedOption] = useState<number | null>(null);
   const [showExplanation, setShowExplanation] = useState(false);
 
-  const handleRateCard = () => {
+  const fetchFlashcards = async () => {
+    setLoading(true);
+    try {
+      const res = await fetch(`/api/recall/flashcards?s=${subjectSlug}`);
+      const data = await res.json();
+      if (!data.error) {
+        setFlashcards(data);
+      }
+    } catch (_) {}
+    setLoading(false);
+  };
+
+  React.useEffect(() => {
+    fetchFlashcards();
+  }, [subjectSlug]);
+
+  const handleRateCard = async (score: 'again' | 'hard' | 'good') => {
+    const currentCard = flashcards[cardIdx];
+    if (!currentCard) return;
+
     setIsFlipped(false);
+    
+    // Optimistic / delayed progression
     setTimeout(() => {
-      setCardIdx((prev) => (prev + 1) % flashcardsData.length);
+      setCardIdx((prev) => (prev + 1) % flashcards.length);
     }, 300);
+
+    try {
+      await fetch('/api/recall/flashcards', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ cardId: currentCard._id, score }),
+      });
+    } catch (_) {}
   };
 
   const handleSelectQuizOption = (idx: number) => {
@@ -74,14 +106,30 @@ export default function RecallPage() {
     setQuizIdx((prev) => (prev + 1) % quizQuestions.length);
   };
 
-  const currentCard = flashcardsData[cardIdx];
+  const currentCard = flashcards[cardIdx];
   const currentQuiz = quizQuestions[quizIdx];
 
   return (
     <div className="space-y-8">
-      <div className="relative pb-3 border-b border-white/10">
-        <h1 className="font-heading text-4xl font-bold text-[#E8DCC8]">Active Recall Engine</h1>
-        <p className="text-[#A0B2C6] mt-1">Automated SM-2 spaced repetition flashcards and adaptive difficulty quizzes.</p>
+      <div className="relative pb-3 border-b border-white/10 flex flex-col md:flex-row md:items-center justify-between gap-4">
+        <div>
+          <h1 className="font-heading text-4xl font-bold text-[#E8DCC8]">Active Recall Engine</h1>
+          <p className="text-[#A0B2C6] mt-1">Automated SM-2 spaced repetition flashcards and adaptive difficulty quizzes.</p>
+        </div>
+        <div className="flex items-center gap-2">
+          <span className="text-xs text-[#D4AF37] font-semibold uppercase tracking-wider">Active Subject:</span>
+          <select
+            value={subjectSlug}
+            onChange={(e) => setSubjectSlug(e.target.value)}
+            className="bg-[#16213E] border border-[#B8860B]/40 rounded px-3 py-1 text-xs text-white outline-none cursor-pointer focus:border-[#D4AF37]"
+          >
+            <option value="philosophy">Philosophy 🏛️</option>
+            <option value="physics">Physics 🌌</option>
+            <option value="neuroscience">Neuroscience 🧠</option>
+            <option value="economics">Economics 📈</option>
+            <option value="cs">Computer Science 💻</option>
+          </select>
+        </div>
         <div className="absolute bottom-0 left-0 w-20 h-1 bg-gradient-to-r from-[#D4AF37] to-transparent rounded-full"></div>
       </div>
 
@@ -112,44 +160,52 @@ export default function RecallPage() {
       {activeTab === 'flashcards' ? (
         /* Flashcard View */
         <div className="space-y-6">
-          <div className="perspective-1000 max-w-2xl h-96 mx-auto">
-            <div
-              onClick={() => setIsFlipped(!isFlipped)}
-              className={`relative w-full h-full cursor-pointer transition-transform duration-700 transform-style-3d ${
-                isFlipped ? 'rotate-y-180' : ''
-              }`}
-            >
-              {/* Front */}
-              <div className="absolute inset-0 w-full h-full bg-gradient-to-br from-[#16213E] to-[#0F3460] border-2 border-[#B8860B] rounded-2xl p-8 flex flex-col justify-center items-center text-center backface-hidden shadow-2xl">
-                <span className="absolute top-6 left-6 text-xs uppercase tracking-widest text-[#D4AF37] font-bold">
-                  {currentCard.type}
-                </span>
-                <h2 className="font-heading text-2xl text-[#E8DCC8] mb-4">{currentCard.prompt}</h2>
-                <span className="text-sm italic text-[#6B7C93]">Click card to reveal answer</span>
+          {loading ? (
+            <div className="p-12 text-center text-[#D4AF37] font-heading">Consulting the library scrolls...</div>
+          ) : !currentCard ? (
+            <div className="p-12 text-center text-[#A0B2C6]">No flashcards available in this subject archive yet.</div>
+          ) : (
+            <>
+              <div className="perspective-1000 max-w-2xl h-96 mx-auto">
+                <div
+                  onClick={() => setIsFlipped(!isFlipped)}
+                  className={`relative w-full h-full cursor-pointer transition-transform duration-700 transform-style-3d ${
+                    isFlipped ? 'rotate-y-180' : ''
+                  }`}
+                >
+                  {/* Front */}
+                  <div className="absolute inset-0 w-full h-full bg-gradient-to-br from-[#16213E] to-[#0F3460] border-2 border-[#B8860B] rounded-2xl p-8 flex flex-col justify-center items-center text-center backface-hidden shadow-2xl">
+                    <span className="absolute top-6 left-6 text-xs uppercase tracking-widest text-[#D4AF37] font-bold">
+                      {currentCard.type}
+                    </span>
+                    <h2 className="font-heading text-2xl text-[#E8DCC8] mb-4">{currentCard.prompt}</h2>
+                    <span className="text-sm italic text-[#6B7C93]">Click card to reveal answer</span>
+                  </div>
+
+                  {/* Back */}
+                  <div className="absolute inset-0 w-full h-full bg-gradient-to-br from-[#0F3460] to-[#16213E] border-2 border-[#B8860B] rounded-2xl p-8 flex flex-col justify-center items-center text-center backface-hidden rotate-y-180 shadow-2xl">
+                    <span className="absolute top-6 left-6 text-xs uppercase tracking-widest text-[#D4AF37] font-bold">
+                      Answer Key
+                    </span>
+                    <p className="text-lg text-[#E8DCC8] leading-relaxed">{currentCard.answer}</p>
+                  </div>
+                </div>
               </div>
 
-              {/* Back */}
-              <div className="absolute inset-0 w-full h-full bg-gradient-to-br from-[#0F3460] to-[#16213E] border-2 border-[#B8860B] rounded-2xl p-8 flex flex-col justify-center items-center text-center backface-hidden rotate-y-180 shadow-2xl">
-                <span className="absolute top-6 left-6 text-xs uppercase tracking-widest text-[#D4AF37] font-bold">
-                  Answer Key
-                </span>
-                <p className="text-lg text-[#E8DCC8] leading-relaxed">{currentCard.answer}</p>
-              </div>
-            </div>
-          </div>
-
-          {isFlipped && (
-            <div className="flex justify-center gap-4 max-w-md mx-auto animate-fadeIn">
-              <button onClick={handleRateCard} className="flex-1 py-3 bg-red-600 hover:bg-red-500 text-white font-bold rounded-lg transition-all">
-                Repeat (Again)
-              </button>
-              <button onClick={handleRateCard} className="flex-1 py-3 bg-amber-600 hover:bg-amber-500 text-white font-bold rounded-lg transition-all">
-                Hard
-              </button>
-              <button onClick={handleRateCard} className="flex-1 py-3 bg-emerald-600 hover:bg-emerald-500 text-white font-bold rounded-lg transition-all">
-                Mastered (Good)
-              </button>
-            </div>
+              {isFlipped && (
+                <div className="flex justify-center gap-4 max-w-md mx-auto animate-fadeIn">
+                  <button onClick={() => handleRateCard('again')} className="flex-1 py-3 bg-red-600 hover:bg-red-500 text-white font-bold rounded-lg transition-all">
+                    Repeat (Again)
+                  </button>
+                  <button onClick={() => handleRateCard('hard')} className="flex-1 py-3 bg-amber-600 hover:bg-amber-500 text-white font-bold rounded-lg transition-all">
+                    Hard
+                  </button>
+                  <button onClick={() => handleRateCard('good')} className="flex-1 py-3 bg-emerald-600 hover:bg-emerald-500 text-white font-bold rounded-lg transition-all">
+                    Mastered (Good)
+                  </button>
+                </div>
+              )}
+            </>
           )}
         </div>
       ) : (

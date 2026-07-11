@@ -12,6 +12,32 @@ export default function RootLayout({
 }) {
   const pathname = usePathname();
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+  const [user, setUser] = useState<{ fullName: string; username: string; level: number; xp: number; streak: number } | null>(null);
+
+  const loadSession = () => {
+    if (typeof window !== 'undefined') {
+      const stored = localStorage.getItem('geeky_session');
+      if (stored) {
+        try {
+          setUser(JSON.parse(stored));
+        } catch (_) {}
+      } else {
+        setUser(null);
+      }
+    }
+  };
+
+  React.useEffect(() => {
+    loadSession();
+    window.addEventListener('storage', loadSession);
+    return () => window.removeEventListener('storage', loadSession);
+  }, [pathname]);
+
+  const handleLogout = () => {
+    localStorage.removeItem('geeky_session');
+    setUser(null);
+    alert('Logged out from Gymnasium.');
+  };
 
   const subjectsList = [
     { name: 'Philosophy', slug: 'philosophy', icon: '🏛️' },
@@ -29,30 +55,41 @@ export default function RootLayout({
   return (
     <html lang="en" className="dark">
       <body className="h-screen bg-[#1A1A2E] text-[#E8DCC8] flex overflow-hidden font-body">
+        <div className="animated-bg" />
         {/* Persistent Sidebar Navigation */}
         <aside className={`relative flex flex-col bg-[#16213E] border-r border-[#B8860B]/30 flex-shrink-0 transition-all duration-300 ${
           sidebarCollapsed ? 'w-16' : 'w-64'
         }`}>
           {/* Brand Header */}
-          <div className="flex items-center gap-3 px-4 py-5 border-b border-white/10">
-            <div className="w-8 h-8 rounded-lg bg-[#0F3460] border border-[#B8860B] flex items-center justify-center flex-shrink-0 text-xl">
-              🏛️
-            </div>
-            {!sidebarCollapsed && (
-              <span className="font-heading font-bold text-xl tracking-wider bg-gradient-to-r from-white to-[#D4AF37] bg-clip-text text-transparent">
-                Geeky
-              </span>
+          <div className="flex items-center justify-between px-4 py-5 border-b border-white/10 h-16">
+            {!sidebarCollapsed ? (
+              <>
+                <div className="flex items-center gap-3">
+                  <div className="w-8 h-8 rounded-lg bg-[#0F3460] border border-[#B8860B] flex items-center justify-center flex-shrink-0 text-xl">
+                    🏛️
+                  </div>
+                  <span className="font-heading font-bold text-xl tracking-wider bg-gradient-to-r from-white to-[#D4AF37] bg-clip-text text-transparent">
+                    Geeky
+                  </span>
+                </div>
+                <button
+                  onClick={() => setSidebarCollapsed(true)}
+                  className="w-6 h-6 rounded border border-[#B8860B]/40 text-[#D4AF37] hover:bg-[#0F3460] flex items-center justify-center transition-colors text-xs"
+                  title="Collapse Sidebar"
+                >
+                  ←
+                </button>
+              </>
+            ) : (
+              <button
+                onClick={() => setSidebarCollapsed(false)}
+                className="w-full h-full flex items-center justify-center text-[#D4AF37] hover:bg-white/5 transition-colors text-lg"
+                title="Expand Sidebar"
+              >
+                →
+              </button>
             )}
           </div>
-
-          {/* Toggle Collapse Button */}
-          <button
-            onClick={() => setSidebarCollapsed(!sidebarCollapsed)}
-            className="absolute -right-3 top-16 w-6 h-6 rounded-full bg-[#16213E] border border-[#B8860B] flex items-center justify-center z-20 text-[#D4AF37] hover:bg-[#0F3460] transition-colors"
-            title={sidebarCollapsed ? 'Expand Sidebar' : 'Collapse Sidebar'}
-          >
-            {sidebarCollapsed ? '→' : '←'}
-          </button>
 
           {/* Sidebar Menu Items */}
           <div className="flex-1 overflow-y-auto py-4 px-3 space-y-6 scrollbar-thin">
@@ -145,16 +182,22 @@ export default function RootLayout({
 
           {/* User Profile Footer */}
           {!sidebarCollapsed && (
-            <Link href="/profile" className="p-3 border-t border-white/10 bg-[#0F3460]/40 flex items-center gap-3 hover:bg-[#0F3460] transition-colors">
-              <div className="w-8 h-8 rounded-full bg-gradient-to-br from-[#B8860B] to-[#D4AF37] flex items-center justify-center font-bold text-xs text-[#1A1A2E]">
-                AK
-              </div>
-              <div className="flex-1 min-w-0">
-                <p className="text-xs font-semibold text-white truncate">Arjun Kapoor</p>
-                <p className="text-[10px] text-[#A0B2C6] truncate">Lvl 14 · 8,420 XP</p>
-              </div>
-              <span className="text-orange-500 text-sm">🔥</span>
-            </Link>
+            user ? (
+              <Link href="/profile" className="p-3 border-t border-white/10 bg-[#0F3460]/40 flex items-center gap-3 hover:bg-[#0F3460] transition-colors">
+                <div className="w-8 h-8 rounded-full bg-gradient-to-br from-[#B8860B] to-[#D4AF37] flex items-center justify-center font-bold text-xs text-[#1A1A2E]">
+                  {user.fullName.substring(0, 2).toUpperCase()}
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="text-xs font-semibold text-white truncate">{user.fullName}</p>
+                  <p className="text-[10px] text-[#A0B2C6] truncate">Lvl {user.level} · {user.xp.toLocaleString()} XP</p>
+                </div>
+                <span className="text-orange-500 text-sm">🔥</span>
+              </Link>
+            ) : (
+              <Link href="/login" className="p-3 border-t border-white/10 bg-[#0F3460]/20 flex items-center justify-center gap-2 hover:bg-[#0F3460]/40 transition-colors text-xs text-[#D4AF37] font-semibold">
+                <span>🔑</span> Log In to Save Progress
+              </Link>
+            )
           )}
         </aside>
 
@@ -177,16 +220,28 @@ export default function RootLayout({
             <div className="flex items-center gap-3">
               <div className="flex items-center gap-2 bg-[#0F3460] border border-[#B8860B]/40 rounded-lg px-3 py-1.5">
                 <span className="text-xs text-[#D4AF37]">⚡</span>
-                <span className="text-xs font-bold font-mono text-[#D4AF37]">8,420 XP</span>
+                <span className="text-xs font-bold font-mono text-[#D4AF37]">
+                  {user ? `${user.xp.toLocaleString()} XP` : '0 XP'}
+                </span>
               </div>
 
-              <Link href="/login" className="px-3 py-1.5 text-xs text-[#D4AF37] border border-[#B8860B]/40 rounded-lg hover:bg-[#B8860B]/10 transition-colors">
-                Sign In
-              </Link>
-
-              <Link href="/register" className="px-3 py-1.5 text-xs bg-[#B8860B] text-[#1A1A2E] font-bold rounded-lg hover:bg-[#D4AF37] transition-colors">
-                Sign Up
-              </Link>
+              {user ? (
+                <button
+                  onClick={handleLogout}
+                  className="px-3 py-1.5 text-xs text-red-400 border border-red-500/30 rounded-lg hover:bg-red-500/10 transition-colors"
+                >
+                  Sign Out
+                </button>
+              ) : (
+                <>
+                  <Link href="/login" className="px-3 py-1.5 text-xs text-[#D4AF37] border border-[#B8860B]/40 rounded-lg hover:bg-[#B8860B]/10 transition-colors">
+                    Sign In
+                  </Link>
+                  <Link href="/register" className="px-3 py-1.5 text-xs bg-[#B8860B] text-[#1A1A2E] font-bold rounded-lg hover:bg-[#D4AF37] transition-colors">
+                    Sign Up
+                  </Link>
+                </>
+              )}
             </div>
           </header>
 

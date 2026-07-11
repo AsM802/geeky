@@ -55,3 +55,202 @@ body {
 .rotate-y-180 {
   transform: rotateY(180deg);
 }
+
+@keyframes kenburns {
+  0% {
+    transform: scale(1) translate(0, 0);
+  }
+  50% {
+    transform: scale(1.08) translate(-1%, -1%);
+  }
+  100% {
+    transform: scale(1) translate(0, 0);
+  }
+}
+
+.animated-bg {
+  position: fixed;
+  top: -2%;
+  left: -2%;
+  width: 104%;
+  height: 104%;
+  background-image: url('/library-bg.png');
+  background-size: cover;
+  background-position: center;
+  z-index: -10;
+  opacity: 0.65;
+  animation: kenburns 60s ease-in-out infinite;
+  pointer-events: none;
+  filter: saturate(0.95);
+  transition: opacity 0.5s ease-in-out;
+}
+
+.light .animated-bg {
+  opacity: 0.45;
+}
+
+/* Framed Box styling with black lines and corners */
+.framed-box {
+  position: relative;
+  border: 2px solid #000000 !important;
+  background: rgba(15, 23, 42, 0.85) !important;
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.6) !important;
+}
+
+.framed-box::before {
+  content: '';
+  position: absolute;
+  top: -4px;
+  left: -4px;
+  width: 16px;
+  height: 16px;
+  border-top: 4px solid #000000;
+  border-left: 4px solid #000000;
+  pointer-events: none;
+}
+
+.framed-box::after {
+  content: '';
+  position: absolute;
+  bottom: -4px;
+  right: -4px;
+  width: 16px;
+  height: 16px;
+  border-bottom: 4px solid #000000;
+  border-right: 4px solid #000000;
+  pointer-events: none;
+}
+
+/* Apply framed-box globally to key UI cards & sidebar */
+aside, header, .bg-\[\#16213E\], .bg-\[\#0F3460\], .subject-card, .idea-card, .quiz-container, .create-debate-card, .debate-post-card, .profile-banner, .stat-card, .badge-card {
+  position: relative;
+  border: 2px solid #000000 !important;
+  background: rgba(15, 23, 42, 0.82) !important;
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.6) !important;
+}
+
+aside::before, header::before, .bg-\[\#16213E\]::before, .bg-\[\#0F3460\]::before, .subject-card::before, .idea-card::before, .quiz-container::before, .create-debate-card::before, .debate-post-card::before, .profile-banner::before, .stat-card::before, .badge-card::before {
+  content: '';
+  position: absolute;
+  top: -4px;
+  left: -4px;
+  width: 14px;
+  height: 14px;
+  border-top: 4px solid #000000;
+  border-left: 4px solid #000000;
+  pointer-events: none;
+}
+
+aside::after, header::after, .bg-\[\#16213E\]::after, .bg-\[\#0F3460\]::after, .subject-card::after, .idea-card::after, .quiz-container::after, .create-debate-card::after, .debate-post-card::after, .profile-banner::after, .stat-card::after, .badge-card::after {
+  content: '';
+  position: absolute;
+  bottom: -4px;
+  right: -4px;
+  width: 14px;
+  height: 14px;
+  border-bottom: 4px solid #000000;
+  border-right: 4px solid #000000;
+  pointer-events: none;
+}
+
+/* Winding Serpentine Path Styles */
+.winding-path-container {
+  position: relative;
+  width: 100%;
+  max-width: 800px;
+  margin: 0 auto;
+  padding: 3rem 0;
+}
+
+.winding-path-line {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 50%;
+  width: 4px;
+  background: linear-gradient(to bottom, #B8860B 0%, #0F3460 50%, #1A1A2E 100%);
+  transform: translateX(-50%);
+  z-index: 0;
+}
+
+.path-node-wrapper {
+  position: relative;
+  display: flex;
+  width: 100%;
+  margin-bottom: 3.5rem;
+  z-index: 10;
+}
+
+.path-node-wrapper:last-child {
+  margin-bottom: 0;
+}
+
+.node-left {
+  justify-content: flex-start;
+  padding-right: 50%;
+}
+
+.node-right {
+  justify-content: flex-end;
+  padding-left: 50%;
+}
+
+.path-node-circle {
+  position: absolute;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.5rem;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.6);
+  cursor: pointer;
+  transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+.path-node-circle:hover {
+  transform: translateX(-50%) scale(1.15);
+}
+
+.node-completed {
+  background: radial-gradient(circle, #D4AF37 0%, #B8860B 100%);
+  border: 3px solid #000000;
+  color: #1A1A2E;
+}
+
+.node-active {
+  background: radial-gradient(circle, #0F3460 0%, #16213E 100%);
+  border: 3px solid #D4AF37;
+  color: #D4AF37;
+  box-shadow: 0 0 25px rgba(212, 175, 55, 0.6);
+  animation: activeNodePulse 2s infinite ease-in-out;
+}
+
+.node-locked {
+  background: #1A1A2E;
+  border: 3px solid #000000;
+  color: #6B7C93;
+  opacity: 0.6;
+}
+
+@keyframes activeNodePulse {
+  0% { box-shadow: 0 0 10px rgba(212, 175, 55, 0.4); }
+  50% { box-shadow: 0 0 30px rgba(212, 175, 55, 0.8); }
+  100% { box-shadow: 0 0 10px rgba(212, 175, 55, 0.4); }
+}
+
+.node-details-card {
+  width: 90%;
+  max-width: 320px;
+  margin: 0 auto;
+}
+
+
+
