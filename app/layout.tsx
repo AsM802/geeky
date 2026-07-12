@@ -128,7 +128,7 @@ export default function RootLayout({
                   <span className="text-lg">💬</span>
                   {!sidebarCollapsed && (
                     <div className="flex-1 flex items-center justify-between">
-                      <span>Debate & Discuss</span>
+                      <span>Debate & Discussions</span>
                       <span className="text-[10px] font-bold bg-[#B8860B]/20 text-[#D4AF37] px-1.5 py-0.5 rounded-full">12</span>
                     </div>
                   )}
