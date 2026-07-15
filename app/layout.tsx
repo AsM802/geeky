@@ -3,6 +3,7 @@
 import React, { useState } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
+import GeekyLogo from '../components/GeekyLogo';
 import './globals.css';
 
 export default function RootLayout({
@@ -27,10 +28,39 @@ export default function RootLayout({
     }
   };
 
+  const applyTheme = (themeName: string) => {
+    const root = document.documentElement;
+    const themes: Record<string, { primary: string; secondary: string; accent: string; glow: string }> = {
+      hermes: { primary: '#181613', secondary: '#25221E', accent: '#CD7F32', glow: 'rgba(205, 127, 50, 0.4)' },
+      hestia: { primary: '#1D120D', secondary: '#2C1B14', accent: '#D35400', glow: 'rgba(211, 84, 0, 0.4)' },
+      ares: { primary: '#1B0808', secondary: '#2C1010', accent: '#E74C3C', glow: 'rgba(231, 76, 60, 0.4)' },
+      athena: { primary: '#0E1B15', secondary: '#1A2F24', accent: '#D4AF37', glow: 'rgba(212, 175, 55, 0.4)' },
+      apollo: { primary: '#211D12', secondary: '#332D1B', accent: '#F1C40F', glow: 'rgba(241, 196, 15, 0.4)' },
+      zeus: { primary: '#0A1220', secondary: '#14223A', accent: '#0083B0', glow: 'rgba(0, 131, 176, 0.4)' }
+    };
+    const active = themes[themeName] || themes['athena'];
+    root.style.setProperty('--primary-theme', active.primary);
+    root.style.setProperty('--secondary-theme', active.secondary);
+    root.style.setProperty('--accent-theme', active.accent);
+    root.style.setProperty('--glow-theme', active.glow);
+  };
+
   React.useEffect(() => {
     loadSession();
+    const savedTheme = localStorage.getItem('geeky_god_theme') || 'athena';
+    applyTheme(savedTheme);
+
+    const handleThemeChange = () => {
+      const activeTheme = localStorage.getItem('geeky_god_theme') || 'athena';
+      applyTheme(activeTheme);
+    };
+
     window.addEventListener('storage', loadSession);
-    return () => window.removeEventListener('storage', loadSession);
+    window.addEventListener('geeky_theme_update', handleThemeChange);
+    return () => {
+      window.removeEventListener('storage', loadSession);
+      window.removeEventListener('geeky_theme_update', handleThemeChange);
+    };
   }, [pathname]);
 
   const handleLogout = () => {
@@ -54,7 +84,7 @@ export default function RootLayout({
 
   return (
     <html lang="en" className="dark">
-      <body className="h-screen bg-[#1A1A2E] text-[#E8DCC8] flex overflow-hidden font-body">
+      <body className="h-screen bg-black text-[#E8DCC8] flex overflow-hidden font-body">
         <div className="animated-bg" />
         {/* Persistent Sidebar Navigation */}
         <aside className={`relative flex flex-col bg-[#16213E] border-r border-[#B8860B]/30 flex-shrink-0 transition-all duration-300 ${
@@ -64,17 +94,12 @@ export default function RootLayout({
           <div className="flex items-center justify-between px-4 py-5 border-b border-white/10 h-16">
             {!sidebarCollapsed ? (
               <>
-                <div className="flex items-center gap-3">
-                  <div className="w-8 h-8 rounded-lg bg-[#0F3460] border border-[#B8860B] flex items-center justify-center flex-shrink-0 text-xl">
-                    🏛️
-                  </div>
-                  <span className="font-heading font-bold text-xl tracking-wider bg-gradient-to-r from-white to-[#D4AF37] bg-clip-text text-transparent">
-                    Geeky
-                  </span>
-                </div>
+                <Link href="/">
+                  <GeekyLogo collapsed={false} />
+                </Link>
                 <button
                   onClick={() => setSidebarCollapsed(true)}
-                  className="w-6 h-6 rounded border border-[#B8860B]/40 text-[#D4AF37] hover:bg-[#0F3460] flex items-center justify-center transition-colors text-xs"
+                  className="w-6 h-6 rounded border border-[#B8860B]/40 text-[#D4AF37] hover:bg-white/5 flex items-center justify-center transition-colors text-xs"
                   title="Collapse Sidebar"
                 >
                   ←
@@ -86,7 +111,7 @@ export default function RootLayout({
                 className="w-full h-full flex items-center justify-center text-[#D4AF37] hover:bg-white/5 transition-colors text-lg"
                 title="Expand Sidebar"
               >
-                →
+                <GeekyLogo collapsed={true} />
               </button>
             )}
           </div>

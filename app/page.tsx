@@ -3,8 +3,19 @@
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 
+interface GodTheme {
+  id: string;
+  name: string;
+  level: number;
+  icon: string;
+  desc: string;
+  primary: string;
+  accent: string;
+}
+
 export default function DashboardHome() {
   const [user, setUser] = useState<{ fullName: string; username: string; level: number; xp: number; streak: number } | null>(null);
+  const [activeTheme, setActiveTheme] = useState('athena');
 
   useEffect(() => {
     if (typeof window !== 'undefined') {
@@ -14,23 +25,21 @@ export default function DashboardHome() {
           setUser(JSON.parse(stored));
         } catch (_) {}
       }
+      const savedTheme = localStorage.getItem('geeky_god_theme') || 'athena';
+      setActiveTheme(savedTheme);
     }
   }, []);
 
   const scholarName = user ? user.fullName.split(' ')[0] : 'Arjun';
   const streakDays = user ? user.streak : 14;
   const currentXp = user ? user.xp : 8420;
-  const currentLvl = user ? user.level : 14;
+  const currentLvl = user ? user.level : 15; // Set fallback level to 15 to unlock Athena by default
 
   const activeSubjects = [
     { name: 'Philosophy', category: 'Humanities', progress: 68, activeDays: '8d', style: 'border-[#D4AF37]/40 bg-amber-500/5', badgeColor: 'bg-amber-500/20 text-[#D4AF37]' },
     { name: 'Physics', category: 'Sciences', progress: 45, activeDays: '1d', style: 'border-cyan-500/30 bg-cyan-500/5', badgeColor: 'bg-cyan-500/20 text-cyan-400' },
     { name: 'Neuroscience', category: 'Life Sciences', progress: 82, activeDays: '14d', style: 'border-emerald-500/30 bg-emerald-500/5', badgeColor: 'bg-emerald-500/20 text-emerald-400' },
-    { name: 'Economics', category: 'Social Sciences', progress: 51, activeDays: '2d', style: 'border-purple-500/30 bg-purple-500/5', badgeColor: 'bg-purple-500/20 text-purple-400' },
-    { name: 'Chemistry', category: 'Sciences', progress: 29, activeDays: '4d', style: 'border-pink-500/30 bg-pink-500/5', badgeColor: 'bg-pink-500/20 text-pink-400' },
-    { name: 'Computer Science', category: 'Engineering', progress: 73, activeDays: '5d', style: 'border-blue-500/30 bg-blue-500/5', badgeColor: 'bg-blue-500/20 text-blue-400' },
-    { name: 'Literature', category: 'Humanities', progress: 38, activeDays: '5d', style: 'border-indigo-500/30 bg-indigo-500/5', badgeColor: 'bg-indigo-500/20 text-indigo-400' },
-    { name: 'Political Science', category: 'Social Sciences', progress: 62, activeDays: '6d', style: 'border-teal-500/30 bg-teal-500/5', badgeColor: 'bg-teal-500/20 text-teal-400' }
+    { name: 'Economics', category: 'Social Sciences', progress: 51, activeDays: '2d', style: 'border-purple-500/30 bg-purple-500/5', badgeColor: 'bg-purple-500/20 text-purple-400' }
   ];
 
   const achievements = [
@@ -43,6 +52,25 @@ export default function DashboardHome() {
     { title: 'Subject Master', xp: '+400 XP', desc: '100% completion in one subject', unlocked: false, icon: '👑' },
     { title: 'Elite Scholar', xp: '+1000 XP', desc: 'Reached Level 50', unlocked: false, icon: '🏛️' }
   ];
+
+  const godThemes: GodTheme[] = [
+    { id: 'hermes', name: 'Hermes', level: 1, icon: '🪽', desc: 'Bronze & Slate Gray (Tier 1)', primary: '#181613', accent: '#CD7F32' },
+    { id: 'hestia', name: 'Hestia', level: 5, icon: '🔥', desc: 'Warm Hearth Orange (Tier 5)', primary: '#1D120D', accent: '#D35400' },
+    { id: 'ares', name: 'Ares', level: 10, icon: '⚔️', desc: 'War Crimson Red (Tier 10)', primary: '#1B0808', accent: '#E74C3C' },
+    { id: 'athena', name: 'Athena', level: 15, icon: '🦉', desc: 'Wisdom Sage Emerald (Tier 15)', primary: '#0E1B15', accent: '#D4AF37' },
+    { id: 'apollo', name: 'Apollo', level: 20, icon: '☀️', desc: 'Sun Solar Amber (Tier 20)', primary: '#211D12', accent: '#F1C40F' },
+    { id: 'zeus', name: 'Zeus', level: 25, icon: '⚡', desc: 'King Thunder Blue (Tier 25)', primary: '#0A1220', accent: '#0083B0' }
+  ];
+
+  const handleSelectTheme = (theme: GodTheme) => {
+    if (currentLvl < theme.level) {
+      alert(`This theme unlocks at Level ${theme.level}! Continue active studying to earn more XP.`);
+      return;
+    }
+    localStorage.setItem('geeky_god_theme', theme.id);
+    setActiveTheme(theme.id);
+    window.dispatchEvent(new Event('geeky_theme_update'));
+  };
 
   return (
     <div className="space-y-6">
@@ -60,11 +88,11 @@ export default function DashboardHome() {
         <div className="mt-6 pt-6 border-t border-white/10 grid grid-cols-1 md:grid-cols-4 gap-6 items-center">
           <div className="md:col-span-3">
             <div className="flex justify-between items-center text-xs font-semibold text-white mb-2">
-              <span className="uppercase tracking-wider text-[#D4AF37]">EXPERIENCE POINTS</span>
-              <span className="font-mono text-[#D4AF37]">{currentXp.toLocaleString()} XP</span>
+              <span className="uppercase tracking-wider text-[var(--accent-theme,#D4AF37)]">EXPERIENCE POINTS</span>
+              <span className="font-mono text-[var(--accent-theme,#D4AF37)]">{currentXp.toLocaleString()} XP</span>
             </div>
             <div className="h-3 bg-black/40 rounded-full overflow-hidden border border-white/5 relative">
-              <div className="h-full bg-gradient-to-r from-[#B8860B] to-[#D4AF37]" style={{ width: `${(currentXp % 10000) / 100}%` }}></div>
+              <div className="h-full bg-gradient-to-r from-[#B8860B] to-[var(--accent-theme,#D4AF37)]" style={{ width: `${(currentXp % 10000) / 100}%` }}></div>
             </div>
             <div className="flex justify-between mt-1.5 text-[10px] text-[#A0B2C6]">
               <span>Progress to Level {currentLvl + 1}</span>
@@ -72,7 +100,7 @@ export default function DashboardHome() {
             </div>
           </div>
           <div className="flex items-center gap-3 md:justify-end">
-            <div className="w-12 h-12 rounded-full border-2 border-[#D4AF37] flex items-center justify-center font-bold text-lg text-[#D4AF37] font-mono shadow-[0_0_12px_rgba(212,175,55,0.3)]">
+            <div className="w-12 h-12 rounded-full border-2 border-[var(--accent-theme,#D4AF37)] flex items-center justify-center font-bold text-lg text-[var(--accent-theme,#D4AF37)] font-mono shadow-[0_0_12px_rgba(212,175,55,0.3)]">
               {currentLvl}
             </div>
             <div>
@@ -83,14 +111,14 @@ export default function DashboardHome() {
         </div>
       </div>
 
-      {/* Main Grid Metrics Row (Rank / Streak / Cards / Accuracy / Charts) */}
+      {/* Main Grid Metrics Row */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         
-        {/* Left Stats Grid (2/3 Width) */}
+        {/* Left Stats Grid */}
         <div className="lg:col-span-2 space-y-6">
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
             {/* Global Rank Card */}
-            <div className="bg-[#16213E]/80 border border-white/10 p-5 rounded-xl flex flex-col justify-between relative group hover:border-[#D4AF37]/50 transition-all">
+            <div className="bg-[#16213E]/80 border border-white/10 p-5 rounded-xl flex flex-col justify-between relative group hover:border-[var(--accent-theme,#D4AF37)]/50 transition-all">
               <div className="text-xl">🏆</div>
               <div className="mt-4">
                 <span className="text-[9px] text-[#A0B2C6] uppercase tracking-wider block">GLOBAL RANK</span>
@@ -129,7 +157,7 @@ export default function DashboardHome() {
                 <span className="text-[10px] text-emerald-400 font-semibold block mt-1">▲ +124 today</span>
               </div>
               <div className="text-right">
-                <span className="text-xs text-[#D4AF37] font-bold block">342</span>
+                <span className="text-xs text-[var(--accent-theme,#D4AF37)] font-bold block">342</span>
                 <span className="text-[9px] text-[#A0B2C6] uppercase">due reviews</span>
               </div>
             </div>
@@ -149,10 +177,10 @@ export default function DashboardHome() {
           </div>
         </div>
 
-        {/* Right Sidebar: Weekly Study & Recent activity (1/3 Width) */}
+        {/* Right Sidebar: Weekly Study & Recent activity */}
         <div className="bg-[#16213E]/80 border border-white/10 p-5 rounded-xl flex flex-col justify-between">
           <div>
-            <h3 className="text-xs font-bold text-[#D4AF37] uppercase tracking-widest mb-4">Weekly Study Activity</h3>
+            <h3 className="text-xs font-bold text-[var(--accent-theme,#D4AF37)] uppercase tracking-widest mb-4">Weekly Study Activity</h3>
             {/* Bar Chart Mock */}
             <div className="flex items-end justify-between h-24 gap-2 pt-2">
               {[
@@ -165,7 +193,7 @@ export default function DashboardHome() {
                 { day: 'Sun', hours: 10 }
               ].map((b, idx) => (
                 <div key={idx} className="flex-1 flex flex-col items-center gap-1.5 h-full justify-end">
-                  <div className="w-full bg-[#0F3460] rounded hover:bg-[#D4AF37] transition-all relative group" style={{ height: `${b.hours}%` }}>
+                  <div className="w-full bg-[#0F3460] rounded hover:bg-[var(--accent-theme,#D4AF37)] transition-all relative group" style={{ height: `${b.hours}%` }}>
                     <span className="absolute -top-6 left-1/2 transform -translate-x-1/2 bg-black text-[9px] text-white px-1 rounded opacity-0 group-hover:opacity-100 transition-opacity">{(b.hours/10).toFixed(1)}h</span>
                   </div>
                   <span className="text-[9px] text-[#A0B2C6]">{b.day}</span>
@@ -191,12 +219,12 @@ export default function DashboardHome() {
       <div>
         <div className="flex justify-between items-center mb-4">
           <h3 className="text-sm font-bold text-white uppercase tracking-widest">Active Subjects</h3>
-          <Link href="/subject-learning-screen" className="text-xs text-[#D4AF37] hover:underline font-semibold">View all &rarr;</Link>
+          <Link href="/subject-learning-screen" className="text-xs text-[var(--accent-theme,#D4AF37)] hover:underline font-semibold">View all &rarr;</Link>
         </div>
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-          {activeSubjects.slice(0, 4).map((sub, idx) => (
+          {activeSubjects.map((sub, idx) => (
             <Link key={idx} href={`/subject-learning-screen?s=${sub.name.toLowerCase() === 'computer science' ? 'cs' : sub.name.toLowerCase()}`}>
-              <div className={`p-4 border rounded-xl shadow hover:border-[#D4AF37] transition-all relative flex flex-col justify-between h-32 ${sub.style}`}>
+              <div className={`p-4 border rounded-xl shadow hover:border-[var(--accent-theme,#D4AF37)] transition-all relative flex flex-col justify-between h-32 ${sub.style}`}>
                 <div className="flex justify-between items-start">
                   <div>
                     <span className={`text-[8px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full ${sub.badgeColor}`}>
@@ -212,12 +240,50 @@ export default function DashboardHome() {
                     <span>{sub.progress}%</span>
                   </div>
                   <div className="h-1 bg-white/10 rounded-full overflow-hidden">
-                    <div className="h-full bg-[#D4AF37]" style={{ width: `${sub.progress}%` }}></div>
+                    <div className="h-full bg-[var(--accent-theme,#D4AF37)]" style={{ width: `${sub.progress}%` }}></div>
                   </div>
                 </div>
               </div>
             </Link>
           ))}
+        </div>
+      </div>
+
+      {/* Greek God Aura Themes Selector */}
+      <div className="bg-[#16213E]/60 border border-white/10 p-5 rounded-xl">
+        <div className="flex justify-between items-center mb-4">
+          <div>
+            <h3 className="text-xs font-bold text-white uppercase tracking-widest">Greek God Aura Selector</h3>
+            <p className="text-[10px] text-[#A0B2C6] mt-0.5">Toggle unlocked themes based on your level. Progression is infinite!</p>
+          </div>
+          <span className="text-[10px] text-[var(--accent-theme,#D4AF37)] font-mono uppercase font-bold">Active: {activeTheme}</span>
+        </div>
+        <div className="grid grid-cols-2 md:grid-cols-6 gap-3">
+          {godThemes.map((god) => {
+            const isUnlocked = currentLvl >= god.level;
+            const isActive = activeTheme === god.id;
+            return (
+              <div
+                key={god.id}
+                onClick={() => handleSelectTheme(god)}
+                className={`p-3 rounded-lg text-center flex flex-col justify-between items-center h-28 relative cursor-pointer border transition-all ${
+                  isActive 
+                    ? 'bg-[var(--primary-theme,#0E1B15)] border-[var(--accent-theme,#D4AF37)] shadow-[0_0_12px_var(--glow-theme)]'
+                    : isUnlocked 
+                      ? 'bg-[#0F3460]/40 border-white/10 hover:border-[var(--accent-theme,#D4AF37)]/50' 
+                      : 'bg-black/40 border-dashed border-white/5 opacity-40 cursor-not-allowed'
+                }`}
+              >
+                <div className="text-2xl mt-1">{isUnlocked ? god.icon : '🔒'}</div>
+                <div>
+                  <h5 className="text-[10px] font-bold text-white truncate w-full">{god.name}</h5>
+                  <span className="text-[8px] font-semibold text-[#A0B2C6] block mt-0.5">
+                    {isUnlocked ? `Lvl ${god.level}+ Unlocked` : `Requires Lvl ${god.level}`}
+                  </span>
+                </div>
+              </div>
+            );
+          })}
         </div>
       </div>
 
@@ -235,7 +301,7 @@ export default function DashboardHome() {
               <div className="text-2xl mt-1">{ac.icon}</div>
               <div>
                 <h5 className="text-[10px] font-bold text-white truncate w-full">{ac.title}</h5>
-                <span className="text-[8px] font-bold text-[#D4AF37] block mt-0.5">{ac.xp}</span>
+                <span className="text-[8px] font-bold text-[var(--accent-theme,#D4AF37)] block mt-0.5">{ac.xp}</span>
               </div>
               
               {/* Hover description popup tooltip */}

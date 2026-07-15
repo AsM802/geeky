@@ -5,15 +5,21 @@
 @tailwind utilities;
 
 :root {
-  --bg-primary: #1A1A2E;
-  --bg-secondary: #16213E;
-  --bg-card: #0F3460;
+  --bg-primary: #090A0F;
+  --bg-secondary: var(--primary-theme, #0E1B15);
+  --bg-card: var(--secondary-theme, #1A2F24);
   --text-primary: #E8DCC8;
   --text-secondary: #A0B2C6;
-  --accent-gold: #B8860B;
-  --accent-gold-light: #D4AF37;
-  --border-gold: rgba(184, 134, 11, 0.4);
+  --accent-gold: var(--accent-theme, #D4AF37);
+  --accent-gold-light: var(--accent-theme, #D4AF37);
+  --border-gold: var(--glow-theme, rgba(212, 175, 55, 0.4));
   --border-subtle: rgba(255, 255, 255, 0.08);
+
+  /* Greek God Dynamic Theme defaults (Athena) */
+  --primary-theme: #0E1B15;
+  --secondary-theme: #1A2F24;
+  --accent-theme: #D4AF37;
+  --glow-theme: rgba(212, 175, 55, 0.4);
 }
 
 .light {
@@ -126,9 +132,9 @@ body {
 /* Apply framed-box globally to key UI cards & sidebar */
 aside, header, .bg-\[\#16213E\], .bg-\[\#0F3460\], .subject-card, .idea-card, .quiz-container, .create-debate-card, .debate-post-card, .profile-banner, .stat-card, .badge-card {
   position: relative;
-  border: 2px solid #000000 !important;
-  background: rgba(15, 23, 42, 0.82) !important;
-  backdrop-filter: blur(16px);
+  border: 1px solid var(--border-gold) !important;
+  background: var(--bg-secondary) !important;
+  backdrop-filter: blur(24px);
   -webkit-backdrop-filter: blur(16px);
   box-shadow: 0 8px 32px rgba(0, 0, 0, 0.6) !important;
 }
@@ -140,8 +146,8 @@ aside::before, header::before, .bg-\[\#16213E\]::before, .bg-\[\#0F3460\]::befor
   left: -4px;
   width: 14px;
   height: 14px;
-  border-top: 4px solid #000000;
-  border-left: 4px solid #000000;
+  border-top: 4px solid var(--accent-gold);
+  border-left: 4px solid var(--accent-gold);
   pointer-events: none;
 }
 
@@ -152,8 +158,8 @@ aside::after, header::after, .bg-\[\#16213E\]::after, .bg-\[\#0F3460\]::after, .
   right: -4px;
   width: 14px;
   height: 14px;
-  border-bottom: 4px solid #000000;
-  border-right: 4px solid #000000;
+  border-bottom: 4px solid var(--accent-gold);
+  border-right: 4px solid var(--accent-gold);
   pointer-events: none;
 }
 
