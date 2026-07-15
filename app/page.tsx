@@ -75,7 +75,7 @@ export default function DashboardHome() {
   return (
     <div className="space-y-6">
       {/* Top Welcome Alert Banner */}
-      <div className="relative overflow-hidden bg-gradient-to-br from-[#16213E] to-[#0F3460] border border-[#B8860B]/40 rounded-2xl p-6 shadow-2xl">
+      <div className="relative overflow-hidden bg-gradient-to-br from-black/60 to-[var(--secondary-theme)] border border-[#B8860B]/40 rounded-2xl p-6 shadow-2xl">
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
           <div>
             <h1 className="font-heading text-2xl font-bold text-[#E8DCC8]">Good afternoon, {scholarName} 👋</h1>
@@ -118,7 +118,7 @@ export default function DashboardHome() {
         <div className="lg:col-span-2 space-y-6">
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
             {/* Global Rank Card */}
-            <div className="bg-[#16213E]/80 border border-white/10 p-5 rounded-xl flex flex-col justify-between relative group hover:border-[var(--accent-theme,#D4AF37)]/50 transition-all">
+            <div className="bg-black/40 backdrop-blur-md border-[var(--secondary-theme)] border border-white/10 p-5 rounded-xl flex flex-col justify-between relative group hover:border-[var(--accent-theme,#D4AF37)]/50 transition-all">
               <div className="text-xl">🏆</div>
               <div className="mt-4">
                 <span className="text-[9px] text-[#A0B2C6] uppercase tracking-wider block">GLOBAL RANK</span>
@@ -128,7 +128,7 @@ export default function DashboardHome() {
             </div>
 
             {/* Streak Card */}
-            <div className="bg-[#16213E]/80 border border-white/10 p-5 rounded-xl flex flex-col justify-between relative group hover:border-orange-500/50 transition-all">
+            <div className="bg-black/40 backdrop-blur-md border-[var(--secondary-theme)] border border-white/10 p-5 rounded-xl flex flex-col justify-between relative group hover:border-orange-500/50 transition-all">
               <div className="text-xl">🔥</div>
               <div className="mt-4">
                 <span className="text-[9px] text-[#A0B2C6] uppercase tracking-wider block">CURRENT STREAK</span>
@@ -138,7 +138,7 @@ export default function DashboardHome() {
             </div>
 
             {/* Quiz Accuracy Card */}
-            <div className="bg-[#16213E]/80 border border-white/10 p-5 rounded-xl flex flex-col justify-between relative group hover:border-cyan-500/50 transition-all">
+            <div className="bg-black/40 backdrop-blur-md border-[var(--secondary-theme)] border border-white/10 p-5 rounded-xl flex flex-col justify-between relative group hover:border-cyan-500/50 transition-all">
               <div className="text-xl">🎯</div>
               <div className="mt-4">
                 <span className="text-[9px] text-[#A0B2C6] uppercase tracking-wider block">QUIZ ACCURACY</span>
@@ -150,7 +150,7 @@ export default function DashboardHome() {
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             {/* Cards Reviewed */}
-            <div className="bg-[#16213E]/80 border border-white/10 p-5 rounded-xl flex items-center justify-between">
+            <div className="bg-black/40 backdrop-blur-md border-[var(--secondary-theme)] border border-white/10 p-5 rounded-xl flex items-center justify-between">
               <div>
                 <span className="text-[9px] text-[#A0B2C6] uppercase tracking-wider block">CARDS REVIEWED</span>
                 <span className="text-2xl font-bold font-mono text-white mt-1">1,842</span>
@@ -163,7 +163,7 @@ export default function DashboardHome() {
             </div>
 
             {/* Debate Contributions */}
-            <div className="bg-[#16213E]/80 border border-white/10 p-5 rounded-xl flex items-center justify-between">
+            <div className="bg-black/40 backdrop-blur-md border-[var(--secondary-theme)] border border-white/10 p-5 rounded-xl flex items-center justify-between">
               <div>
                 <span className="text-[9px] text-[#A0B2C6] uppercase tracking-wider block">DEBATE CONTRIBUTIONS</span>
                 <span className="text-2xl font-bold font-mono text-white mt-1">38</span>
@@ -178,7 +178,7 @@ export default function DashboardHome() {
         </div>
 
         {/* Right Sidebar: Weekly Study & Recent activity */}
-        <div className="bg-[#16213E]/80 border border-white/10 p-5 rounded-xl flex flex-col justify-between">
+        <div className="bg-black/40 backdrop-blur-md border-[var(--secondary-theme)] border border-white/10 p-5 rounded-xl flex flex-col justify-between">
           <div>
             <h3 className="text-xs font-bold text-[var(--accent-theme,#D4AF37)] uppercase tracking-widest mb-4">Weekly Study Activity</h3>
             {/* Bar Chart Mock */}
@@ -193,7 +193,7 @@ export default function DashboardHome() {
                 { day: 'Sun', hours: 10 }
               ].map((b, idx) => (
                 <div key={idx} className="flex-1 flex flex-col items-center gap-1.5 h-full justify-end">
-                  <div className="w-full bg-[#0F3460] rounded hover:bg-[var(--accent-theme,#D4AF37)] transition-all relative group" style={{ height: `${b.hours}%` }}>
+                  <div className="w-full bg-[var(--secondary-theme)] rounded hover:bg-[var(--accent-theme,#D4AF37)] transition-all relative group" style={{ height: `${b.hours}%` }}>
                     <span className="absolute -top-6 left-1/2 transform -translate-x-1/2 bg-black text-[9px] text-white px-1 rounded opacity-0 group-hover:opacity-100 transition-opacity">{(b.hours/10).toFixed(1)}h</span>
                   </div>
                   <span className="text-[9px] text-[#A0B2C6]">{b.day}</span>
@@ -270,7 +270,7 @@ export default function DashboardHome() {
                   isActive 
                     ? 'bg-[var(--primary-theme,#0E1B15)] border-[var(--accent-theme,#D4AF37)] shadow-[0_0_12px_var(--glow-theme)]'
                     : isUnlocked 
-                      ? 'bg-[#0F3460]/40 border-white/10 hover:border-[var(--accent-theme,#D4AF37)]/50' 
+                      ? 'bg-[var(--secondary-theme)]/40 border-white/10 hover:border-[var(--accent-theme,#D4AF37)]/50' 
                       : 'bg-black/40 border-dashed border-white/5 opacity-40 cursor-not-allowed'
                 }`}
               >
@@ -296,7 +296,7 @@ export default function DashboardHome() {
         <div className="grid grid-cols-2 md:grid-cols-8 gap-3">
           {achievements.map((ac, idx) => (
             <div key={idx} className={`p-3 rounded-lg border border-black/40 text-center flex flex-col justify-between items-center h-28 relative group transition-all ${
-              ac.unlocked ? 'bg-[#0F3460]/40 border-[#B8860B]/20' : 'bg-black/30 opacity-40'
+              ac.unlocked ? 'bg-[var(--secondary-theme)]/40 border-[#B8860B]/20' : 'bg-black/30 opacity-40'
             }`}>
               <div className="text-2xl mt-1">{ac.icon}</div>
               <div>
