@@ -238,16 +238,18 @@ function SubjectLearningContent() {
     const localData = subjectsDatabase[subjectSlug] || subjectsDatabase['philosophy'];
     setCurrentSubject(localData);
 
-    // Silently fetch dynamic progress from MongoDB in the background
-    fetch(`/api/subjects?s=${subjectSlug}`)
-      .then((res) => res.json())
-      .then((data) => {
-        // Only update if the database returned a valid populated subject document
-        if (data && data.slug && data.title && !data.error) {
-          setCurrentSubject(data);
-        }
-      })
-      .catch(() => {});
+    // Silently fetch dynamic progress from live API in the background
+    import('../../lib/apiClient').then(({ fetchClient }) => {
+      fetchClient(`/api/subjects/${subjectSlug}`)
+        .then((res) => res.json())
+        .then((data) => {
+          // Only update if the database returned a valid populated subject document
+          if (data && data.slug && data.title && !data.error) {
+            setCurrentSubject(data);
+          }
+        })
+        .catch(() => {});
+    });
   }, [subjectSlug]);
 
   if (!currentSubject) {
@@ -697,16 +699,29 @@ function SubjectAIQuizGenerator({ subjectTitle }: { subjectTitle: string }) {
   const [generating, setGenerating] = useState(false);
   const [generatedResult, setGeneratedResult] = useState<string | null>(null);
 
-  const handleGenerate = () => {
+  const handleGenerate = async () => {
     if (!prompt.trim()) return;
     setGenerating(true);
     setGeneratedResult(null);
     
-    // Simulate generation loop
-    setTimeout(() => {
+    try {
+      const { fetchClient } = await import('../../lib/apiClient');
+      // Fetch both custom flashcards and quiz simultaneously
+      const [cardsRes, quizRes] = await Promise.all([
+        fetchClient(`/api/ai/flashcards?subject=${currentSubject?.slug}`),
+        fetchClient(`/api/ai/quiz?subject=${currentSubject?.slug}&query=${encodeURIComponent(prompt)}`)
+      ]);
+
+      if (cardsRes.ok && quizRes.ok) {
+        setGeneratedResult(`AI generated custom cards and a quiz successfully based on prompt: "${prompt}"! They have been added to your Active Recall deck.`);
+      } else {
+        setGeneratedResult('Generation failed. Please try again.');
+      }
+    } catch (e) {
+      setGeneratedResult('Network error during AI generation.');
+    } finally {
       setGenerating(false);
-      setGeneratedResult(`AI generated 5 cards and 1 custom quiz successfully based on prompt: "${prompt}"! They have been added to your Active Recall deck.`);
-    }, 2500);
+    }
   };
 
   return (

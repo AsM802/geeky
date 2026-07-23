@@ -20,15 +20,16 @@ export default function RegisterPage() {
     setLoading(true);
 
     try {
-      const res = await fetch('/api/auth/register', {
+      const API_URL = process.env.NEXT_PUBLIC_API_URL || 'https://api.geekyedu.in';
+      const res = await fetch(`${API_URL}/api/auth/signup`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ fullName, username, email, password }),
+        body: JSON.stringify({ name: fullName, username, email, password }),
       });
       const data = await res.json();
 
       if (!res.ok) {
-        setError(data.error || 'Registration failed');
+        setError(data.message || data.error || 'Registration failed');
       } else {
         alert('Account created successfully! Proceeding to Sign In.');
         router.push('/login');

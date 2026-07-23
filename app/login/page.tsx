@@ -18,7 +18,8 @@ export default function LoginPage() {
     setLoading(true);
 
     try {
-      const res = await fetch('/api/auth/login', {
+      const API_URL = process.env.NEXT_PUBLIC_API_URL || 'https://api.geekyedu.in';
+      const res = await fetch(`${API_URL}/api/auth/login`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email, password }),
@@ -26,12 +27,19 @@ export default function LoginPage() {
       const data = await res.json();
 
       if (!res.ok) {
-        setError(data.error || 'Authentication failed');
+        setError(data.message || data.error || 'Authentication failed');
       } else {
-        localStorage.setItem('geeky_session', JSON.stringify(data.user));
+        const accessToken = data.accessToken || data.access_token || data.token;
+        const refreshToken = data.refreshToken || data.refresh_token || '';
+        
+        if (accessToken) localStorage.setItem('geeky_access_token', accessToken);
+        if (refreshToken) localStorage.setItem('geeky_refresh_token', refreshToken);
+        
+        // Optionally fetch user profile immediately or rely on layout
+        localStorage.setItem('geeky_session', JSON.stringify(data.user || { fullName: 'Scholar' }));
+        
         alert('Welcome back to the Gymnasium!');
         router.push('/');
-        // Trigger a custom event to force layout to reload session
         window.dispatchEvent(new Event('storage'));
       }
     } catch (err) {

@@ -3,6 +3,7 @@
 import React, { useState } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
+import { fetchClient } from '../lib/apiClient';
 import GeekyLogo from '../components/GeekyLogo';
 import './globals.css';
 
@@ -15,7 +16,7 @@ export default function RootLayout({
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [user, setUser] = useState<{ fullName: string; username: string; level: number; xp: number; streak: number } | null>(null);
 
-  const loadSession = () => {
+  const loadSession = async () => {
     if (typeof window !== 'undefined') {
       const stored = localStorage.getItem('geeky_session');
       if (stored) {
@@ -24,6 +25,19 @@ export default function RootLayout({
         } catch (_) {}
       } else {
         setUser(null);
+      }
+
+      // Fetch fresh data from API silently
+      try {
+        const res = await fetchClient('/api/auth/me');
+        if (res.ok) {
+          const freshData = await res.json();
+          const userObj = freshData.user || freshData;
+          setUser(userObj);
+          localStorage.setItem('geeky_session', JSON.stringify(userObj));
+        }
+      } catch (e) {
+        // Ignored, token will expire or refresh handles it
       }
     }
   };
