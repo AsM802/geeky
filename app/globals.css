@@ -258,5 +258,18 @@ aside::after, header::after, .bg-\[\#16213E\]::after, .bg-\[\#0F3460\]::after, .
   margin: 0 auto;
 }
 
+/* Global page loader spinner */
+.page-loader-spinner {
+  width: 48px;
+  height: 48px;
+  border: 4px solid rgba(255,255,255,0.12);
+  border-top-color: var(--accent-gold);
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+  box-shadow: 0 4px 20px rgba(0,0,0,0.6);
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+
+
 
 
