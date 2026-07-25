@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
+import { showToast } from '../lib/toast';
 
 interface GodTheme {
   id: string;
@@ -67,7 +68,7 @@ export default function DashboardHome() {
 
   const handleSelectTheme = (theme: GodTheme) => {
     if (currentLvl < theme.level) {
-      alert(`This theme unlocks at Level ${theme.level}! Continue active studying to earn more XP.`);
+      showToast(`This theme unlocks at Level ${theme.level}! Continue active studying to earn more XP.`, 'warning');
       return;
     }
     localStorage.setItem('geeky_god_theme', theme.id);
