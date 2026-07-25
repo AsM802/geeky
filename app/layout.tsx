@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { fetchClient } from '../lib/apiClient';
@@ -20,6 +20,10 @@ export default function RootLayout({
   const [user, setUser] = useState<{ fullName: string; username: string; level: number; xp: number; streak: number } | null>(null);
   const [toast, setToast] = useState<{ message: string; variant: 'info' | 'success' | 'warning' | 'error' } | null>(null);
   const toastTimerRef = React.useRef<number | null>(null);
+
+  // Global page loader state
+  const [isLoading, setIsLoading] = useState(false);
+  const pendingFetchesRef = useRef<number>(0);
 
   const loadSession = async () => {
     if (typeof window !== 'undefined') {
@@ -120,6 +124,59 @@ export default function RootLayout({
     };
   }, []);
 
+  // Global loader: show on clicks of interactive elements and during any window.fetch activity.
+  React.useEffect(() => {
+    const originalFetch = window.fetch.bind(window);
+    const pendingRef = pendingFetchesRef;
+
+    // Wrap window.fetch so any network request will show the global loader while it is in-flight.
+    window.fetch = async (...args: any[]) => {
+      pendingRef.current += 1;
+      setIsLoading(true);
+      try {
+        const res = await originalFetch(...args);
+        return res;
+      } finally {
+        pendingRef.current -= 1;
+        if (pendingRef.current <= 0) {
+          pendingRef.current = 0;
+          setIsLoading(false);
+        }
+      }
+    };
+
+    // Show loader immediately for user clicks on interactive elements. The fetch wrapper will hide it when network activity finishes.
+    const clickHandler = (e: MouseEvent) => {
+      const tgt = e.target as HTMLElement | null;
+      if (!tgt) return;
+      const el = tgt.closest('a, button, [role="button"], input[type="submit"], input[type="button"], [data-loading]');
+      if (el) {
+        setIsLoading(true);
+      }
+    };
+
+    document.addEventListener('click', clickHandler, true);
+
+    const cleanup = () => {
+      document.removeEventListener('click', clickHandler, true);
+      window.fetch = originalFetch;
+      pendingRef.current = 0;
+      setIsLoading(false);
+    };
+
+    window.addEventListener('pageshow', cleanup);
+    window.addEventListener('pagehide', cleanup);
+    window.addEventListener('unload', cleanup);
+
+    return () => {
+      document.removeEventListener('click', clickHandler, true);
+      window.fetch = originalFetch;
+      window.removeEventListener('pageshow', cleanup);
+      window.removeEventListener('pagehide', cleanup);
+      window.removeEventListener('unload', cleanup);
+    };
+  }, []);
+
   const handleLogout = () => {
     localStorage.removeItem('geeky_session');
     localStorage.removeItem('geeky_access_token');
@@ -160,6 +217,12 @@ export default function RootLayout({
     <html lang="en" className="dark">
       <body className="h-screen bg-black text-[#E8DCC8] flex overflow-hidden font-body">
         <div className="animated-bg" />
+        {/* Global page loader overlay */}
+        {isLoading && (
+          <div className="fixed inset-0 z-[9999] bg-black/60 flex items-center justify-center cursor-wait">
+            <div className="page-loader-spinner" role="status" aria-label="Loading" />
+          </div>
+        )}
         {toast && (
           <div className="fixed right-4 top-4 z-[60] max-w-sm">
             <div className={`rounded-2xl border px-4 py-3 shadow-2xl backdrop-blur-xl ${toastStyles[toast.variant]}`}>
