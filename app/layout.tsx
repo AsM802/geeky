@@ -161,18 +161,6 @@ export default function RootLayout({
     router.push('/');
   };
 
-  const subjectsList = [
-    { name: 'Philosophy', slug: 'philosophy', icon: '🏛️' },
-    { name: 'Physics', slug: 'physics', icon: '🌌' },
-    { name: 'Neuroscience', slug: 'neuroscience', icon: '🧠' },
-    { name: 'Economics', slug: 'economics', icon: '📈' },
-    { name: 'Chemistry', slug: 'chemistry', icon: '🧪' },
-    { name: 'Comp. Science', slug: 'cs', icon: '💻' },
-    { name: 'Literature', slug: 'literature', icon: '📚' },
-    { name: 'Politics', slug: 'politics', icon: '🌐' },
-    { name: 'Artificial Intel.', slug: 'ai', icon: '🤖', badge: 'New' },
-    { name: 'Psychology', slug: 'psychology', icon: '🔬' },
-  ];
 
   const toastStyles: Record<'info' | 'success' | 'warning' | 'error', string> = {
     info: 'border-[#D4AF37]/40 bg-[#16213E]/95 text-[#F8EFCF]',
@@ -290,34 +278,6 @@ export default function RootLayout({
                 </div>
               </div>
 
-              {user && (
-                <div>
-                  {!sidebarCollapsed && (
-                    <p className="text-[10px] font-bold uppercase tracking-widest text-[#D4AF37]/70 px-2 mb-2">Subjects</p>
-                  )}
-                  <div className="space-y-1">
-                    {subjectsList.map((sub) => (
-                      <Link
-                        key={sub.slug}
-                        href={`/subject-learning-screen?s=${sub.slug}`}
-                        className="flex items-center gap-3 px-3 py-2 rounded-lg text-xs font-medium text-[#A0B2C6] hover:text-white hover:bg-white/5 transition-all"
-                      >
-                        <span>{sub.icon}</span>
-                        {!sidebarCollapsed && (
-                          <div className="flex-1 flex items-center justify-between">
-                            <span>{sub.name}</span>
-                            {sub.badge && (
-                              <span className="text-[9px] font-bold bg-emerald-500/20 text-emerald-400 px-1.5 py-0.5 rounded-full">
-                                {sub.badge}
-                              </span>
-                            )}
-                          </div>
-                        )}
-                      </Link>
-                    ))}
-                  </div>
-                </div>
-              )}
 
               {/* Account Links */}
               <div>

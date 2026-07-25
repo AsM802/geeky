@@ -303,13 +303,10 @@ function safeRemoteArray(data: any): any[] | null {
   return Array.isArray(data) ? data : null;
 }
  
-function SubjectLearningContent() {
-  const searchParams = useSearchParams();
-  const subjectSlug = searchParams.get('s') || 'philosophy';
-  
+function SubjectLearningContent({ subjectSlug }: { subjectSlug: string }) {
   // Use the local database record as the initial state so the page renders instantly
   const [currentSubject, setCurrentSubject] = useState<SubjectDetail | null>(
-    subjectsDatabase[subjectSlug] || subjectsDatabase['philosophy']
+    subjectsDatabase[subjectSlug] || null
   );
   // true while we're showing the local mock preview; set to false when remote subject loaded
   const [usingFallback, setUsingFallback] = useState<boolean>(true);
@@ -319,9 +316,16 @@ function SubjectLearningContent() {
   const [remoteBlogs, setRemoteBlogs] = useState<any[] | null>(null);
 
   React.useEffect(() => {
-    const localData = subjectsDatabase[subjectSlug] || subjectsDatabase['philosophy'];
+    const localData = subjectsDatabase[subjectSlug] || null;
     setCurrentSubject(localData);
     setUsingFallback(true);
+
+    if (!subjectSlug || !subjectsDatabase[subjectSlug]) {
+      setRemoteVideos(null);
+      setRemotePapers(null);
+      setRemoteBlogs(null);
+      return;
+    }
 
     async function loadRemoteSubjectData() {
       try {
@@ -373,11 +377,30 @@ function SubjectLearningContent() {
   }, [subjectSlug]);
 
   if (!currentSubject) {
-    return <div className="p-8 text-center text-red-400 font-heading">Subject not found in the archives.</div>;
+    return (
+      <div className="space-y-6 p-8 rounded-3xl border border-red-400/20 bg-[#1A1A26]/80 text-center">
+        <p className="text-sm font-semibold uppercase tracking-[0.35em] text-red-400/70">Subject not found</p>
+        <p className="text-lg font-bold text-white">We couldn't locate that subject.</p>
+        <p className="text-sm text-[#A0B2C6]">Try browsing the subject catalog to continue your learning journey.</p>
+        <Link href="/subject-learning-screen" className="inline-flex items-center justify-center rounded-full border border-[#D4AF37]/30 bg-[#0F3460]/80 px-4 py-2 text-sm text-[#D4AF37] hover:bg-white/5 transition">
+          Back to subjects
+        </Link>
+      </div>
+    );
   }
 
   return (
     <div className="space-y-6">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <div>
+          <p className="text-[10px] uppercase tracking-[0.35em] text-[#D4AF37]/70">Subject detail</p>
+          <h1 className="text-2xl font-bold text-white font-heading">{currentSubject.title}</h1>
+          <p className="text-sm text-[#A0B2C6] mt-1">Review the course overview, learning modules, and supporting research resources for this subject.</p>
+        </div>
+        <Link href="/subject-learning-screen" className="inline-flex items-center gap-2 rounded-full border border-[#D4AF37]/30 bg-[#0F3460]/80 px-4 py-2 text-sm text-[#D4AF37] transition hover:bg-white/5">
+          ← Back to all subjects
+        </Link>
+      </div>
       {/* Hero Card Container */}
       <div className="relative overflow-hidden bg-gradient-to-br from-[#16213E] via-[#0F3460] to-[#1A1A2E] border border-[#B8860B]/30 rounded-2xl p-8 shadow-2xl">
         <div className="relative flex flex-col lg:flex-row lg:items-center gap-6">
@@ -927,10 +950,109 @@ function SubjectAIQuizGenerator({ subjectTitle, subjectSlug }: { subjectTitle: s
   );
 }
 
+function SubjectListView() {
+  const subjectEntries = Object.values(subjectsDatabase);
+  const pageSize = 4;
+  const [currentPage, setCurrentPage] = useState(1);
+  const totalPages = Math.max(1, Math.ceil(subjectEntries.length / pageSize));
+  const visibleSubjects = subjectEntries.slice((currentPage - 1) * pageSize, currentPage * pageSize);
+
+  return (
+    <div className="space-y-6">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
+        <div>
+          <span className="text-[10px] uppercase tracking-[0.35em] text-[#D4AF37]/70">Subjects Catalog</span>
+          <h1 className="mt-3 text-3xl font-bold text-white font-heading">Choose your next field of study</h1>
+          <p className="mt-3 max-w-2xl text-sm leading-6 text-[#A0B2C6]">Browse all available subject learning paths, then click through to review the full details for a chosen subject.</p>
+        </div>
+        <div className="rounded-3xl border border-white/10 bg-[#0F3460]/80 p-4 text-sm text-[#A0B2C6]">
+          <p className="font-semibold text-white">{subjectEntries.length} subjects available</p>
+          <p className="text-[12px] mt-1">Explore paginated study paths and jump into the one that matches your ambition.</p>
+        </div>
+      </div>
+
+      <div className="grid gap-4 md:grid-cols-2">
+        {visibleSubjects.map((subject) => (
+          <Link
+            key={subject.slug}
+            href={`/subject-learning-screen?s=${subject.slug}`}
+            className="group block rounded-3xl border border-white/10 bg-[#16213E] p-6 transition hover:border-[#D4AF37]/50"
+          >
+            <div className="flex items-center gap-4">
+              <span className="text-4xl">{subject.icon}</span>
+              <div>
+                <p className="text-[10px] uppercase tracking-[0.35em] text-[#D4AF37]/70">{subject.category}</p>
+                <h2 className="mt-2 text-xl font-bold text-white">{subject.title}</h2>
+              </div>
+            </div>
+            <p className="mt-4 text-sm leading-6 text-[#A0B2C6]">{subject.desc}</p>
+            <div className="mt-5 grid grid-cols-2 gap-3 text-[11px] text-[#A0B2C6]">
+              <div className="rounded-2xl bg-white/5 p-3">
+                <p className="font-semibold text-white">{subject.modulesCount} Modules</p>
+              </div>
+              <div className="rounded-2xl bg-white/5 p-3">
+                <p className="font-semibold text-white">{subject.learners} Learners</p>
+              </div>
+              <div className="rounded-2xl bg-white/5 p-3">
+                <p className="font-semibold text-white">★ {subject.avgRating}</p>
+              </div>
+              <div className="rounded-2xl bg-white/5 p-3">
+                <p className="font-semibold text-white">{subject.completionPct}% Completion</p>
+              </div>
+            </div>
+            <div className="mt-5 flex items-center justify-between text-sm">
+              <span className="font-medium text-[#D4AF37]">View details</span>
+              <span className="text-[#A0B2C6]">→</span>
+            </div>
+          </Link>
+        ))}
+      </div>
+
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <div className="flex gap-2">
+          <button
+            onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}
+            disabled={currentPage === 1}
+            className="rounded-xl border border-white/10 bg-[#0F3460]/80 px-4 py-2 text-sm text-white disabled:opacity-40"
+          >
+            Previous
+          </button>
+          <button
+            onClick={() => setCurrentPage((prev) => Math.min(prev + 1, totalPages))}
+            disabled={currentPage === totalPages}
+            className="rounded-xl border border-white/10 bg-[#0F3460]/80 px-4 py-2 text-sm text-white disabled:opacity-40"
+          >
+            Next
+          </button>
+        </div>
+
+        <div className="flex flex-wrap items-center gap-2 text-sm text-[#A0B2C6]">
+          {Array.from({ length: totalPages }, (_, idx) => (
+            <button
+              key={idx}
+              onClick={() => setCurrentPage(idx + 1)}
+              className={`rounded-full px-3 py-1 text-xs font-semibold ${currentPage === idx + 1 ? 'bg-[#D4AF37] text-[#1A1A2E]' : 'bg-[#0F3460]/80 text-[#A0B2C6] hover:bg-white/10'}`}
+            >
+              {idx + 1}
+            </button>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function SubjectLearningScreenContent() {
+  const searchParams = useSearchParams();
+  const subjectSlug = searchParams.get('s');
+
+  return subjectSlug ? <SubjectLearningContent subjectSlug={subjectSlug} /> : <SubjectListView />;
+}
+
 export default function SubjectLearningScreen() {
   return (
     <Suspense fallback={<div className="p-8 text-center text-[#D4AF37]">Loading subject data...</div>}>
-      <SubjectLearningContent />
+      <SubjectLearningScreenContent />
     </Suspense>
   );
 }
