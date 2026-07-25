@@ -19,9 +19,6 @@ export default function RootLayout({
   const [currentUrl, setCurrentUrl] = useState('');
   const [user, setUser] = useState<{ fullName: string; username: string; level: number; xp: number; streak: number } | null>(null);
   const [toast, setToast] = useState<{ message: string; variant: 'info' | 'success' | 'warning' | 'error' } | null>(null);
-  const [activeApiRequests, setActiveApiRequests] = useState(0);
-  const [routeLoading, setRouteLoading] = useState(false);
-  const isLoading = activeApiRequests > 0 || routeLoading;
   const toastTimerRef = React.useRef<number | null>(null);
 
   const loadSession = async () => {
@@ -95,88 +92,6 @@ export default function RootLayout({
   }, [pathname]);
 
   React.useEffect(() => {
-    const handleRouteClick = (event: MouseEvent) => {
-      const target = event.target as HTMLElement | null;
-      if (!target) {
-        return;
-      }
-
-      const anchor = target.closest('a');
-      if (!anchor || !(anchor instanceof HTMLAnchorElement)) {
-        return;
-      }
-
-      const href = anchor.getAttribute('href');
-      const targetAttr = anchor.getAttribute('target');
-      if (!href || href.startsWith('#') || href.startsWith('mailto:') || href.startsWith('tel:')) {
-        return;
-      }
-
-      if (targetAttr && targetAttr !== '_self') {
-        return;
-      }
-
-      try {
-        const url = new URL(href, window.location.href);
-        if (url.origin !== window.location.origin) {
-          return;
-        }
-      } catch {
-        return;
-      }
-
-      setRouteLoading(true);
-    };
-
-    window.addEventListener('click', handleRouteClick, true);
-    return () => window.removeEventListener('click', handleRouteClick, true);
-  }, []);
-
-  React.useEffect(() => {
-    if (typeof window !== 'undefined') {
-      setCurrentUrl(window.location.href);
-    }
-  }, []);
-
-  React.useEffect(() => {
-    if (!routeLoading) {
-      return;
-    }
-
-    const intervalId = window.setInterval(() => {
-      if (window.location.href !== currentUrl) {
-        setCurrentUrl(window.location.href);
-        setRouteLoading(false);
-      }
-    }, 120);
-
-    const timeoutId = window.setTimeout(() => {
-      setRouteLoading(false);
-    }, 2500);
-
-    return () => {
-      window.clearInterval(intervalId);
-      window.clearTimeout(timeoutId);
-    };
-  }, [routeLoading, currentUrl]);
-
-  React.useEffect(() => {
-    const handleApiLoading = (event: Event) => {
-      const customEvent = event as CustomEvent<{ delta: number }>;
-      const delta = customEvent.detail?.delta;
-      if (typeof delta !== 'number') {
-        return;
-      }
-      setActiveApiRequests((current) => Math.max(0, current + delta));
-    };
-
-    window.addEventListener('geeky-api-loading', handleApiLoading as EventListener);
-    return () => {
-      window.removeEventListener('geeky-api-loading', handleApiLoading as EventListener);
-    };
-  }, []);
-
-  React.useEffect(() => {
     const handleToastEvent = (event: Event) => {
       const customEvent = event as CustomEvent<{ message?: string; variant?: 'info' | 'success' | 'warning' | 'error' }>;
       const message = customEvent.detail?.message;
@@ -245,18 +160,6 @@ export default function RootLayout({
     <html lang="en" className="dark">
       <body className="h-screen bg-black text-[#E8DCC8] flex overflow-hidden font-body">
         <div className="animated-bg" />
-        {isLoading && (
-          <>
-            <div className="fixed inset-x-0 top-0 h-1 z-[70] overflow-hidden">
-              <div className="h-full w-full animate-pulse bg-gradient-to-r from-[#B8860B] via-[#D4AF37] to-[#B8860B]" />
-            </div>
-            <div className="fixed inset-0 z-[65] pointer-events-none flex items-start justify-center px-4 pt-24">
-              <div className="rounded-full bg-[#0F3460]/90 border border-[#D4AF37]/40 px-4 py-2 text-xs uppercase tracking-[0.18em] text-[#D4AF37] shadow-2xl backdrop-blur-sm">
-                Loading…
-              </div>
-            </div>
-          </>
-        )}
         {toast && (
           <div className="fixed right-4 top-4 z-[60] max-w-sm">
             <div className={`rounded-2xl border px-4 py-3 shadow-2xl backdrop-blur-xl ${toastStyles[toast.variant]}`}>
