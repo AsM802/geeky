@@ -124,7 +124,7 @@ export default function RootLayout({
     };
   }, []);
 
-  // Global loader: show on clicks of interactive elements and during any window.fetch activity.
+  // Global loader: show during any window.fetch activity only.
   React.useEffect(() => {
     const originalFetch = window.fetch.bind(window);
     const pendingRef = pendingFetchesRef;
@@ -145,35 +145,10 @@ export default function RootLayout({
       }
     };
 
-    // Show loader immediately for user clicks on interactive elements. The fetch wrapper will hide it when network activity finishes.
-    const clickHandler = (e: MouseEvent) => {
-      const tgt = e.target as HTMLElement | null;
-      if (!tgt) return;
-      const el = tgt.closest('a, button, [role="button"], input[type="submit"], input[type="button"], [data-loading]');
-      if (el) {
-        setIsLoading(true);
-      }
-    };
-
-    document.addEventListener('click', clickHandler, true);
-
-    const cleanup = () => {
-      document.removeEventListener('click', clickHandler, true);
+    return () => {
       window.fetch = originalFetch;
       pendingRef.current = 0;
       setIsLoading(false);
-    };
-
-    window.addEventListener('pageshow', cleanup);
-    window.addEventListener('pagehide', cleanup);
-    window.addEventListener('unload', cleanup);
-
-    return () => {
-      document.removeEventListener('click', clickHandler, true);
-      window.fetch = originalFetch;
-      window.removeEventListener('pageshow', cleanup);
-      window.removeEventListener('pagehide', cleanup);
-      window.removeEventListener('unload', cleanup);
     };
   }, []);
 
