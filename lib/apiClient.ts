@@ -15,6 +15,12 @@ const processQueue = (error: any, token: string | null = null) => {
   failedQueue = [];
 };
 
+const dispatchLoadingEvent = (delta: number) => {
+  if (typeof window !== 'undefined') {
+    window.dispatchEvent(new CustomEvent('geeky-api-loading', { detail: { delta } }));
+  }
+};
+
 export async function fetchClient(endpoint: string, options: RequestInit & { skipAuthRedirect?: boolean } = {}) {
   const { skipAuthRedirect, ...fetchOptions } = options;
   let accessToken = '';
@@ -34,7 +40,14 @@ export async function fetchClient(endpoint: string, options: RequestInit & { ski
     headers,
   };
 
-  const executeFetch = async () => fetch(`${API_URL}${endpoint}`, config);
+  const executeFetch = async () => {
+    dispatchLoadingEvent(1);
+    try {
+      return await fetch(`${API_URL}${endpoint}`, config);
+    } finally {
+      dispatchLoadingEvent(-1);
+    }
+  };
   const response = await executeFetch();
 
   if (response.status !== 401) {
