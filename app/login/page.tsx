@@ -4,6 +4,7 @@ import React, { useState } from 'react';
 import Link from 'next/link';
 
 import { useRouter } from 'next/navigation';
+import { showToast } from '../../lib/toast';
 
 export default function LoginPage() {
   const router = useRouter();
@@ -38,7 +39,7 @@ export default function LoginPage() {
         // Optionally fetch user profile immediately or rely on layout
         localStorage.setItem('geeky_session', JSON.stringify(data.user || { fullName: 'Scholar' }));
         
-        alert('Welcome back to the Gymnasium!');
+        showToast('Welcome back to the Gymnasium!', 'success');
         router.push('/');
         window.dispatchEvent(new Event('storage'));
       }

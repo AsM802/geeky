@@ -4,6 +4,7 @@ import React, { useState } from 'react';
 import Link from 'next/link';
 
 import { useRouter } from 'next/navigation';
+import { showToast } from '../../lib/toast';
 
 export default function RegisterPage() {
   const router = useRouter();
@@ -31,7 +32,7 @@ export default function RegisterPage() {
       if (!res.ok) {
         setError(data.message || data.error || 'Registration failed');
       } else {
-        alert('Account created successfully! Proceeding to Sign In.');
+        showToast('Account created successfully! Proceeding to Sign In.', 'success');
         router.push('/login');
       }
     } catch (err) {

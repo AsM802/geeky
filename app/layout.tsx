@@ -2,9 +2,10 @@
 
 import React, { useState } from 'react';
 import Link from 'next/link';
-import { usePathname } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
 import { fetchClient } from '../lib/apiClient';
 import GeekyLogo from '../components/GeekyLogo';
+import { showToast } from '../lib/toast';
 import './globals.css';
 
 export default function RootLayout({
@@ -13,8 +14,11 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   const pathname = usePathname();
+  const router = useRouter();
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [user, setUser] = useState<{ fullName: string; username: string; level: number; xp: number; streak: number } | null>(null);
+  const [toast, setToast] = useState<{ message: string; variant: 'info' | 'success' | 'warning' | 'error' } | null>(null);
+  const toastTimerRef = React.useRef<number | null>(null);
 
   const loadSession = async () => {
     if (typeof window !== 'undefined') {
@@ -86,10 +90,42 @@ export default function RootLayout({
     };
   }, [pathname]);
 
+  React.useEffect(() => {
+    const handleToastEvent = (event: Event) => {
+      const customEvent = event as CustomEvent<{ message?: string; variant?: 'info' | 'success' | 'warning' | 'error' }>;
+      const message = customEvent.detail?.message;
+
+      if (!message) {
+        return;
+      }
+
+      if (toastTimerRef.current) {
+        window.clearTimeout(toastTimerRef.current);
+      }
+
+      setToast({ message, variant: customEvent.detail?.variant || 'info' });
+      toastTimerRef.current = window.setTimeout(() => {
+        setToast(null);
+        toastTimerRef.current = null;
+      }, 3500);
+    };
+
+    window.addEventListener('geeky-toast', handleToastEvent as EventListener);
+    return () => {
+      window.removeEventListener('geeky-toast', handleToastEvent as EventListener);
+      if (toastTimerRef.current) {
+        window.clearTimeout(toastTimerRef.current);
+      }
+    };
+  }, []);
+
   const handleLogout = () => {
     localStorage.removeItem('geeky_session');
+    localStorage.removeItem('geeky_access_token');
+    localStorage.removeItem('geeky_refresh_token');
     setUser(null);
-    alert('Logged out from Gymnasium.');
+    showToast('You have been signed out. Redirecting home...', 'info');
+    router.push('/');
   };
 
   const subjectsList = [
@@ -105,10 +141,36 @@ export default function RootLayout({
     { name: 'Psychology', slug: 'psychology', icon: '🔬' },
   ];
 
+  const toastStyles: Record<'info' | 'success' | 'warning' | 'error', string> = {
+    info: 'border-[#D4AF37]/40 bg-[#16213E]/95 text-[#F8EFCF]',
+    success: 'border-emerald-400/40 bg-emerald-500/10 text-emerald-100',
+    warning: 'border-amber-400/40 bg-amber-500/10 text-amber-100',
+    error: 'border-red-400/40 bg-red-500/10 text-red-100',
+  };
+
+  const toastIcons: Record<'info' | 'success' | 'warning' | 'error', string> = {
+    info: '✨',
+    success: '✓',
+    warning: '⚠',
+    error: '✕',
+  };
+
   return (
     <html lang="en" className="dark">
       <body className="h-screen bg-black text-[#E8DCC8] flex overflow-hidden font-body">
         <div className="animated-bg" />
+        {toast && (
+          <div className="fixed right-4 top-4 z-[60] max-w-sm">
+            <div className={`rounded-2xl border px-4 py-3 shadow-2xl backdrop-blur-xl ${toastStyles[toast.variant]}`}>
+              <div className="flex items-start gap-3">
+                <div className="mt-0.5 text-sm">{toastIcons[toast.variant]}</div>
+                <div>
+                  <p className="text-sm font-semibold">{toast.message}</p>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
         {/* Persistent Sidebar Navigation (only shown to authenticated users) */}
         {user ? (
           <aside className={`relative flex flex-col bg-[#16213E] border-r border-[#B8860B]/30 flex-shrink-0 transition-all duration-300 ${
