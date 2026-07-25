@@ -134,7 +134,7 @@ export default function RootLayout({
       pendingRef.current += 1;
       setIsLoading(true);
       try {
-        const res = await originalFetch(...args);
+        const res = await originalFetch.apply(window, args as [RequestInfo | URL, RequestInit?]);
         return res;
       } finally {
         pendingRef.current -= 1;
