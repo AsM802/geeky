@@ -126,15 +126,15 @@ export default function RootLayout({
 
   // Global loader: show during any window.fetch activity only.
   React.useEffect(() => {
-    const originalFetch = window.fetch.bind(window);
+    const originalFetch = window.fetch.bind(window) as typeof window.fetch;
     const pendingRef = pendingFetchesRef;
 
     // Wrap window.fetch so any network request will show the global loader while it is in-flight.
-    window.fetch = async (...args: any[]) => {
+    window.fetch = async (...args: Parameters<typeof window.fetch>) => {
       pendingRef.current += 1;
       setIsLoading(true);
       try {
-        const res = await originalFetch.apply(window, args as [RequestInfo | URL, RequestInit?]);
+        const res = await originalFetch(...args);
         return res;
       } finally {
         pendingRef.current -= 1;
