@@ -1,101 +1,124 @@
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'https://api.geekyedu.in';
+﻿const API_URL = process.env.NEXT_PUBLIC_API_URL || '';
+
 
 let isRefreshing = false;
 let failedQueue: Array<{ resolve: (value?: any) => void; reject: (reason?: any) => void }> = [];
 
 const processQueue = (error: any, token: string | null = null) => {
-  failedQueue.forEach((prom) => {
+  failedQueue.forEach((entry) => {
     if (error) {
-      prom.reject(error);
+      entry.reject(error);
     } else {
-      prom.resolve(token);
+      entry.resolve(token);
     }
   });
   failedQueue = [];
 };
 
-export async function fetchClient(endpoint: string, options: RequestInit = {}) {
+export async function fetchClient(endpoint: string, options: RequestInit & { skipAuthRedirect?: boolean } = {}) {
+  const { skipAuthRedirect, ...fetchOptions } = options;
   let accessToken = '';
+
   if (typeof window !== 'undefined') {
     accessToken = localStorage.getItem('geeky_access_token') || '';
   }
 
   const headers = {
     'Content-Type': 'application/json',
-    ...(accessToken ? { Authorization: `Bearer ${accessToken}` } : {}),
-    ...options.headers,
+    ...(accessToken ? { Authorization: 'Bearer ' + accessToken } : {}),
+    ...fetchOptions.headers,
   };
 
   const config: RequestInit = {
-    ...options,
+    ...fetchOptions,
     headers,
   };
 
-  const response = await fetch(`${API_URL}${endpoint}`, config);
+  const executeFetch = async () => fetch(`${API_URL}${endpoint}`, config);
+  const response = await executeFetch();
 
-  if (response.status === 401) {
-    // Handle Token Refresh
-    if (typeof window === 'undefined') return response; // Server-side, just return
-
-    const refreshToken = localStorage.getItem('geeky_refresh_token');
-    if (!refreshToken) {
-      localStorage.removeItem('geeky_access_token');
-      localStorage.removeItem('geeky_refresh_token');
-      localStorage.removeItem('geeky_session');
-      window.location.href = '/login';
-      return response;
-    }
-
-    if (isRefreshing) {
-      // Queue the request until refresh is done
-      return new Promise((resolve, reject) => {
-        failedQueue.push({ resolve, reject });
-      })
-        .then((token) => {
-          config.headers = { ...config.headers, Authorization: `Bearer ${token}` };
-          return fetch(`${API_URL}${endpoint}`, config);
-        })
-        .catch((err) => Promise.reject(err));
-    }
-
-    isRefreshing = true;
-
-    try {
-      const refreshRes = await fetch(`${API_URL}/api/auth/refresh`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${refreshToken}`, // API expects it as Bearer
-        },
-      });
-
-      if (refreshRes.ok) {
-        const data = await refreshRes.json();
-        // Assuming the API returns { access_token, refresh_token } or similar
-        const newAccessToken = data.accessToken || data.access_token || data.token;
-        const newRefreshToken = data.refreshToken || data.refresh_token || refreshToken;
-        
-        localStorage.setItem('geeky_access_token', newAccessToken);
-        localStorage.setItem('geeky_refresh_token', newRefreshToken);
-        
-        processQueue(null, newAccessToken);
-        
-        config.headers = { ...config.headers, Authorization: `Bearer ${newAccessToken}` };
-        return fetch(`${API_URL}${endpoint}`, config);
-      } else {
-        throw new Error('Refresh failed');
-      }
-    } catch (error) {
-      processQueue(error, null);
-      localStorage.removeItem('geeky_access_token');
-      localStorage.removeItem('geeky_refresh_token');
-      localStorage.removeItem('geeky_session');
-      window.location.href = '/login';
-      return response; // Return the 401
-    } finally {
-      isRefreshing = false;
-    }
+  if (response.status !== 401) {
+    return response;
   }
 
-  return response;
+  if (typeof window === 'undefined' || skipAuthRedirect) {
+    if (typeof window !== 'undefined') {
+      localStorage.removeItem('geeky_session');
+      localStorage.removeItem('geeky_access_token');
+      localStorage.removeItem('geeky_refresh_token');
+    }
+    return response;
+  }
+
+  const refreshToken = typeof window !== 'undefined' ? localStorage.getItem('geeky_refresh_token') : '';
+  if (!refreshToken) {
+    if (typeof window !== 'undefined') {
+      localStorage.removeItem('geeky_access_token');
+      localStorage.removeItem('geeky_refresh_token');
+      localStorage.removeItem('geeky_session');
+      window.location.href = '/login';
+    }
+    return response;
+  }
+
+  if (isRefreshing) {
+    return new Promise((resolve, reject) => {
+      failedQueue.push({ resolve, reject });
+    }).then((token) => {
+      if (!token) {
+        throw new Error('Token refresh failed');
+      }
+      config.headers = {
+        ...config.headers,
+        Authorization: 'Bearer ' + token,
+      };
+      return fetch(`${API_URL}${endpoint}`, config);
+    });
+  }
+
+  isRefreshing = true;
+
+  try {
+    const refreshRes = await fetch(`${API_URL}/api/auth/refresh`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: 'Bearer ' + refreshToken,
+      },
+      body: JSON.stringify({ refresh_token: refreshToken }),
+    });
+
+    if (!refreshRes.ok) {
+      throw new Error('Token refresh failed');
+    }
+
+    const data = await refreshRes.json();
+    const newAccessToken = data.accessToken || data.access_token || data.token;
+    const newRefreshToken = data.refreshToken || data.refresh_token || refreshToken;
+    if (!newAccessToken) {
+      throw new Error('Refresh response missing access token');
+    }
+
+    localStorage.setItem('geeky_access_token', newAccessToken);
+    localStorage.setItem('geeky_refresh_token', newRefreshToken);
+    processQueue(null, newAccessToken);
+
+    config.headers = {
+      ...config.headers,
+      Authorization: 'Bearer ' + newAccessToken,
+    };
+
+    return fetch(`${API_URL}${endpoint}`, config);
+  } catch (error) {
+    processQueue(error, null);
+    if (typeof window !== 'undefined') {
+      localStorage.removeItem('geeky_access_token');
+      localStorage.removeItem('geeky_refresh_token');
+      localStorage.removeItem('geeky_session');
+      window.location.href = '/login';
+    }
+    return response;
+  } finally {
+    isRefreshing = false;
+  }
 }

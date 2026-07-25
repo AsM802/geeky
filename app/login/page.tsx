@@ -18,12 +18,12 @@ export default function LoginPage() {
     setLoading(true);
 
     try {
-      const API_URL = process.env.NEXT_PUBLIC_API_URL || 'https://api.geekyedu.in';
-      const res = await fetch(`${API_URL}/api/auth/login`, {
+      const { fetchClient } = await import('@/lib/apiClient');
+      const res = await fetchClient('/api/auth/login', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email, password }),
       });
+
       const data = await res.json();
 
       if (!res.ok) {
