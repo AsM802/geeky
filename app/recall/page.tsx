@@ -53,6 +53,7 @@ export default function RecallPage() {
   const [isFlipped, setIsFlipped] = useState(false);
   const [loading, setLoading] = useState(true);
   const [subjectSlug, setSubjectSlug] = useState('philosophy');
+  const [feedbackMessage, setFeedbackMessage] = useState('');
 
   const [quizIdx, setQuizIdx] = useState(0);
   const [selectedOption, setSelectedOption] = useState<number | null>(null);
