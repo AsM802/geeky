@@ -222,7 +222,87 @@ const subjectsDatabase: Record<string, SubjectDetail> = {
     ]
   }
 };
+ 
+function parseYouTubeId(url: string | undefined) {
+  if (!url) return null;
+  const match = url.match(/(?:youtu\.be\/|youtube\.com\/(?:embed\/|watch\?v=|v\/|shorts\/))([\w-]+)/i);
+  return match?.[1] ?? null;
+}
+ 
+function normalizeSubjectModule(item: any, fallback: ModuleItem, index: number): ModuleItem {
+  const status = ['completed', 'active', 'locked'].includes(item?.status)
+    ? item.status
+    : item?.completed
+    ? 'completed'
+    : item?.active
+    ? 'active'
+    : fallback.status;
+  const progress = typeof item?.progress === 'number'
+    ? item.progress
+    : typeof item?.completion === 'number'
+    ? item.completion
+    : fallback.progress;
 
+  return {
+    id: typeof item?.id === 'number' ? item.id : fallback.id ?? index + 1,
+    title: item?.title || item?.name || fallback.title,
+    duration: item?.duration || item?.length || fallback.duration,
+    progress,
+    status,
+  };
+}
+ 
+function normalizeSubjectDetail(remote: any, fallback: SubjectDetail): SubjectDetail {
+  const modules = Array.isArray(remote?.modules)
+    ? remote.modules.map((item: any, idx: number) => normalizeSubjectModule(item, fallback.modules[idx] ?? {
+        id: idx + 1,
+        title: `Module ${idx + 1}`,
+        duration: '2h',
+        status: 'locked'
+      }, idx))
+    : fallback.modules;
+
+  return {
+    slug: remote?.slug || remote?.id || fallback.slug,
+    title: remote?.title || remote?.name || fallback.title,
+    category: remote?.category || remote?.group || fallback.category,
+    badge: remote?.badge || remote?.status || fallback.badge,
+    icon: remote?.icon || fallback.icon,
+    desc: remote?.desc || remote?.description || fallback.desc,
+    modulesCount: typeof remote?.modulesCount === 'number'
+      ? remote.modulesCount
+      : typeof remote?.moduleCount === 'number'
+      ? remote.moduleCount
+      : modules.length,
+    learners: remote?.learners || remote?.learnerCount || fallback.learners,
+    avgRating: typeof remote?.avgRating === 'number'
+      ? remote.avgRating
+      : typeof remote?.rating === 'number'
+      ? remote.rating
+      : fallback.avgRating,
+    xpEarned: typeof remote?.xpEarned === 'number'
+      ? remote.xpEarned
+      : typeof remote?.xp === 'number'
+      ? remote.xp
+      : fallback.xpEarned,
+    completionPct: typeof remote?.completionPct === 'number'
+      ? remote.completionPct
+      : typeof remote?.progress === 'number'
+      ? remote.progress
+      : fallback.completionPct,
+    completedModules: typeof remote?.completedModules === 'number'
+      ? remote.completedModules
+      : typeof remote?.completed === 'number'
+      ? remote.completed
+      : modules.filter((m: ModuleItem) => m.status === 'completed').length,
+    modules,
+  };
+}
+ 
+function safeRemoteArray(data: any): any[] | null {
+  return Array.isArray(data) ? data : null;
+}
+ 
 function SubjectLearningContent() {
   const searchParams = useSearchParams();
   const subjectSlug = searchParams.get('s') || 'philosophy';
@@ -231,25 +311,65 @@ function SubjectLearningContent() {
   const [currentSubject, setCurrentSubject] = useState<SubjectDetail | null>(
     subjectsDatabase[subjectSlug] || subjectsDatabase['philosophy']
   );
+  // true while we're showing the local mock preview; set to false when remote subject loaded
+  const [usingFallback, setUsingFallback] = useState<boolean>(true);
   const [activeTab, setActiveTab] = useState<'overview' | 'videos' | 'papers' | 'blogs' | 'quizzes' | 'flashcards'>('overview');
+  const [remoteVideos, setRemoteVideos] = useState<any[] | null>(null);
+  const [remotePapers, setRemotePapers] = useState<any[] | null>(null);
+  const [remoteBlogs, setRemoteBlogs] = useState<any[] | null>(null);
 
   React.useEffect(() => {
-    // Immediately load the local fallback first for instant, zero-delay UI switching
     const localData = subjectsDatabase[subjectSlug] || subjectsDatabase['philosophy'];
     setCurrentSubject(localData);
+    setUsingFallback(true);
 
-    // Silently fetch dynamic progress from live API in the background
-    import('../../lib/apiClient').then(({ fetchClient }) => {
-      fetchClient(`/api/subjects/${subjectSlug}`)
-        .then((res) => res.json())
-        .then((data) => {
-          // Only update if the database returned a valid populated subject document
-          if (data && data.slug && data.title && !data.error) {
-            setCurrentSubject(data);
-          }
-        })
-        .catch(() => {});
-    });
+    async function loadRemoteSubjectData() {
+      try {
+        const { fetchClient } = await import('../../lib/apiClient');
+        const [subjectRes, videosRes, papersRes, blogsRes] = await Promise.all([
+          fetchClient(`/api/subjects/${subjectSlug}`),
+          fetchClient(`/api/subjects/${subjectSlug}/videos`),
+          fetchClient(`/api/subjects/${subjectSlug}/papers`),
+          fetchClient(`/api/subjects/${subjectSlug}/blog-news`),
+        ]);
+
+        if (subjectRes.ok) {
+          const remote = await subjectRes.json();
+          if (remote && !remote.error) {
+            setCurrentSubject(normalizeSubjectDetail(remote, localData));
+          setUsingFallback(false);
+        }
+        }
+
+        if (videosRes.ok) {
+          const data = await videosRes.json();
+          setRemoteVideos(safeRemoteArray(data));
+        } else {
+          setRemoteVideos(null);
+        }
+
+        if (papersRes.ok) {
+          const data = await papersRes.json();
+          setRemotePapers(safeRemoteArray(data));
+        } else {
+          setRemotePapers(null);
+        }
+
+        if (blogsRes.ok) {
+          const data = await blogsRes.json();
+          setRemoteBlogs(safeRemoteArray(data));
+        } else {
+          setRemoteBlogs(null);
+        }
+      } catch (error) {
+        // Keep the local fallback and ignore remote failures for now.
+        setRemoteVideos(null);
+        setRemotePapers(null);
+        setRemoteBlogs(null);
+      }
+    }
+
+    loadRemoteSubjectData();
   }, [subjectSlug]);
 
   if (!currentSubject) {
@@ -272,7 +392,12 @@ function SubjectLearningContent() {
                   {currentSubject.badge}
                 </span>
               </div>
-              <h1 className="text-3xl font-bold text-white font-heading">{currentSubject.title}</h1>
+              <div className="flex items-center gap-3">
+                <h1 className="text-3xl font-bold text-white font-heading">{currentSubject.title}</h1>
+                {usingFallback && (
+                  <span className="text-[10px] px-2 py-0.5 rounded bg-white/5 text-[#A0B2C6] border border-white/10">Preview</span>
+                )}
+              </div>
               <p className="text-sm text-[#A0B2C6] mt-1 max-w-lg">{currentSubject.desc}</p>
             </div>
           </div>
@@ -423,19 +548,19 @@ function SubjectLearningContent() {
           )}
 
           {activeTab === 'videos' && (
-            <SubjectVideosSection subjectTitle={currentSubject.title} />
+            <SubjectVideosSection subjectTitle={currentSubject.title} remoteVideos={remoteVideos} />
           )}
 
           {activeTab === 'papers' && (
-            <SubjectReadingsSection subjectTitle={currentSubject.title} />
+            <SubjectReadingsSection subjectTitle={currentSubject.title} remotePapers={remotePapers} />
           )}
 
           {activeTab === 'blogs' && (
-            <SubjectBlogsSection subjectTitle={currentSubject.title} />
+            <SubjectBlogsSection subjectTitle={currentSubject.title} remoteBlogs={remoteBlogs} />
           )}
 
           {activeTab === 'quizzes' && (
-            <SubjectAIQuizGenerator subjectTitle={currentSubject.title} />
+            <SubjectAIQuizGenerator subjectTitle={currentSubject.title} subjectSlug={currentSubject.slug} />
           )}
 
           {activeTab === 'flashcards' && (
@@ -454,31 +579,47 @@ function SubjectLearningContent() {
 }
 
 // Sub-Component: Curated 18 Videos Section with Embedded Player & Stage Filters
-function SubjectVideosSection({ subjectTitle }: { subjectTitle: string }) {
+function SubjectVideosSection({ subjectTitle, remoteVideos }: { subjectTitle: string; remoteVideos?: any[] | null }) {
   const [selectedStage, setSelectedStage] = useState<'all' | 'beginner' | 'intermediate' | 'advanced'>('all');
-  const [activeVideo, setActiveVideo] = useState<{ id: number; title: string; stage: string; ytId: string } | null>({
-    id: 1,
-    title: `Introductory Seminar to ${subjectTitle}`,
-    stage: 'beginner',
-    ytId: 'dQw4w9WgXcQ'
-  });
+  const [activeVideo, setActiveVideo] = useState<{ id: number; title: string; stage: string; ytId: string } | null>(null);
   const [videoWatched, setVideoWatched] = useState(false);
 
-  // Generate 18 mock videos: 6 Beginner, 6 Intermediate, 6 Advanced
-  const allVideos = Array.from({ length: 18 }, (_, idx) => {
-    let stage = 'beginner';
-    if (idx >= 6 && idx < 12) stage = 'intermediate';
-    if (idx >= 12) stage = 'advanced';
+  const normalizedVideos = React.useMemo(() => {
+    if (remoteVideos && remoteVideos.length > 0) {
+      return remoteVideos.map((item: any, idx: number) => {
+        const title = item.title || item.name || `Video ${idx + 1}`;
+        const stage = item.stage || item.level || (idx < 6 ? 'beginner' : idx < 12 ? 'intermediate' : 'advanced');
+        const ytId = parseYouTubeId(item.videoUrl || item.url || item.youtubeUrl || item.link) || item.ytId || item.videoId || 'dQw4w9WgXcQ';
+        return {
+          id: idx + 1,
+          title,
+          stage: ['beginner', 'intermediate', 'advanced'].includes(stage) ? stage : 'beginner',
+          ytId,
+        };
+      });
+    }
 
-    return {
-      id: idx + 1,
-      title: `${stage.charAt(0).toUpperCase() + stage.slice(1)} Masterclass Part ${ (idx % 6) + 1 }: Foundations of ${subjectTitle}`,
-      stage,
-      ytId: 'dQw4w9WgXcQ'
-    };
-  });
+    return Array.from({ length: 18 }, (_, idx) => {
+      let stage: 'beginner' | 'intermediate' | 'advanced' = 'beginner';
+      if (idx >= 6 && idx < 12) stage = 'intermediate';
+      if (idx >= 12) stage = 'advanced';
 
-  const filteredVideos = selectedStage === 'all' ? allVideos : allVideos.filter(v => v.stage === selectedStage);
+      return {
+        id: idx + 1,
+        title: `${stage.charAt(0).toUpperCase() + stage.slice(1)} Masterclass Part ${ (idx % 6) + 1 }: Foundations of ${subjectTitle}`,
+        stage,
+        ytId: 'dQw4w9WgXcQ'
+      };
+    });
+  }, [remoteVideos, subjectTitle]);
+
+  React.useEffect(() => {
+    if (normalizedVideos.length > 0) {
+      setActiveVideo((prev) => prev && normalizedVideos.some((video) => video.id === prev.id) ? prev : normalizedVideos[0]);
+    }
+  }, [normalizedVideos]);
+
+  const filteredVideos = selectedStage === 'all' ? normalizedVideos : normalizedVideos.filter(v => v.stage === selectedStage);
 
   return (
     <div className="space-y-6">
@@ -559,11 +700,22 @@ function SubjectVideosSection({ subjectTitle }: { subjectTitle: string }) {
 }
 
 // Sub-Component: 100 Research Papers & E-books Viewer Panel
-function SubjectReadingsSection({ subjectTitle }: { subjectTitle: string }) {
+function SubjectReadingsSection({ subjectTitle, remotePapers }: { subjectTitle: string; remotePapers?: any[] | null }) {
   const [selectedTab, setSelectedTab] = useState<'papers' | 'ebooks'>('papers');
   const [searchQuery, setSearchQuery] = useState('');
   const [activeReading, setActiveReading] = useState<{ title: string; author: string; content: string } | null>(null);
-
+ 
+  const remoteDocuments = React.useMemo(() => {
+    if (!remotePapers || remotePapers.length === 0) return null;
+    return remotePapers.map((item: any, idx: number) => ({
+      id: item.id || item._id || idx + 1,
+      title: item.title || item.name || `Research Paper ${idx + 1}`,
+      author: item.author || item.publisher || item.source || `Dr. ${String.fromCharCode(65 + (idx % 26))} Scholar et al.`,
+      desc: item.desc || item.summary || item.abstract || `Pioneering research paper discussing the conceptual paradigms of ${subjectTitle}.`,
+      content: item.content || item.body || item.abstract || item.summary || `Abstract: This reading provides a comprehensive inquiry and literature review on the analytical paradigms within ${subjectTitle}. Key arguments include classical thesis structures, experimental formulations, and modern digital overlays. [Simulated PDF Content Page 1 of 44]`,
+    }));
+  }, [remotePapers, subjectTitle]);
+ 
   const mockPapers = Array.from({ length: 100 }, (_, idx) => ({
     id: idx + 1,
     title: `Scholarly Inquiry Into ${subjectTitle} Volume ${idx + 1}`,
@@ -571,7 +723,7 @@ function SubjectReadingsSection({ subjectTitle }: { subjectTitle: string }) {
     desc: `Pioneering research paper discussing the conceptual paradigms of ${subjectTitle}.`,
     content: `Abstract: This reading provides a comprehensive inquiry and literature review on the analytical paradigms within ${subjectTitle}. Key arguments include classical thesis structures, experimental formulations, and modern digital overlays. [Simulated PDF Content Page 1 of 44]`
   }));
-
+ 
   const mockEbooks = Array.from({ length: 100 }, (_, idx) => ({
     id: idx + 1,
     title: `The Classical Anthology of ${subjectTitle} - Edition ${idx + 1}`,
@@ -579,8 +731,8 @@ function SubjectReadingsSection({ subjectTitle }: { subjectTitle: string }) {
     desc: `Google open-source digitized library volume on ${subjectTitle}.`,
     content: `Chapter 1: Foundations of the discipline. Exploring classical treatises and Socratic dialetic methods in ${subjectTitle}. [Simulated E-book view Page 1 of 512]`
   }));
-
-  const activeList = selectedTab === 'papers' ? mockPapers : mockEbooks;
+ 
+  const activeList = selectedTab === 'papers' ? remoteDocuments || mockPapers : mockEbooks;
   const filteredList = activeList.filter(item => item.title.toLowerCase().includes(searchQuery.toLowerCase()));
 
   return (
@@ -664,12 +816,22 @@ function SubjectReadingsSection({ subjectTitle }: { subjectTitle: string }) {
 }
 
 // Sub-Component: Auto-updating Blogs & News
-function SubjectBlogsSection({ subjectTitle }: { subjectTitle: string }) {
+function SubjectBlogsSection({ subjectTitle, remoteBlogs }: { subjectTitle: string; remoteBlogs?: any[] | null }) {
   const mockArticles = [
     { title: `Modern Paradigms in ${subjectTitle} Research`, date: 'Just now', source: 'MIT Tech Review', desc: `New discoveries and academic arguments surrounding ${subjectTitle} methodologies published recently.` },
     { title: `Deciphering ${subjectTitle} in the Age of Digital Knowledge`, date: '1 day ago', source: 'Stanford News', desc: `Understanding critical models and historical concepts in ${subjectTitle} through modern perspectives.` },
     { title: `Geopolitical Implications of ${subjectTitle}`, date: '3 days ago', source: 'Harvard Gazette', desc: `How policy decisions are affected by the scholarly research emerging in the field of ${subjectTitle}.` }
   ];
+ 
+  const remoteArticles = React.useMemo(() => {
+    if (!remoteBlogs || remoteBlogs.length === 0) return null;
+    return remoteBlogs.map((item: any, idx: number) => ({
+      title: item.title || item.headline || item.name || `Subject News ${idx + 1}`,
+      date: item.date || item.publishedAt || item.timestamp || 'Just now',
+      source: item.source || item.publisher || item.publication || 'Geeky News',
+      desc: item.description || item.summary || item.snippet || `Latest curated update for ${subjectTitle}.`,
+    }));
+  }, [remoteBlogs, subjectTitle]);
 
   return (
     <div className="space-y-4">
@@ -678,7 +840,7 @@ function SubjectBlogsSection({ subjectTitle }: { subjectTitle: string }) {
         <span className="text-[9px] text-emerald-400 font-mono animate-pulse">● Connected to Live RSS</span>
       </div>
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        {mockArticles.map((art, idx) => (
+        {(remoteArticles || mockArticles).map((art, idx) => (
           <div key={idx} className="p-4 bg-[#16213E] border border-white/5 rounded-xl space-y-2 hover:border-[#D4AF37] transition-all">
             <div className="flex justify-between text-[9px] text-[#A0B2C6]">
               <span>{art.source}</span>
@@ -694,11 +856,11 @@ function SubjectBlogsSection({ subjectTitle }: { subjectTitle: string }) {
 }
 
 // Sub-Component: AI Flashcard & Quiz Custom Prompt Generator
-function SubjectAIQuizGenerator({ subjectTitle }: { subjectTitle: string }) {
+function SubjectAIQuizGenerator({ subjectTitle, subjectSlug }: { subjectTitle: string; subjectSlug: string }) {
   const [prompt, setPrompt] = useState('');
   const [generating, setGenerating] = useState(false);
   const [generatedResult, setGeneratedResult] = useState<string | null>(null);
-
+ 
   const handleGenerate = async () => {
     if (!prompt.trim()) return;
     setGenerating(true);
@@ -708,8 +870,8 @@ function SubjectAIQuizGenerator({ subjectTitle }: { subjectTitle: string }) {
       const { fetchClient } = await import('../../lib/apiClient');
       // Fetch both custom flashcards and quiz simultaneously
       const [cardsRes, quizRes] = await Promise.all([
-        fetchClient(`/api/ai/flashcards?subject=${currentSubject?.slug}`),
-        fetchClient(`/api/ai/quiz?subject=${currentSubject?.slug}&query=${encodeURIComponent(prompt)}`)
+        fetchClient(`/api/ai/flashcards?subject=${subjectSlug}`),
+        fetchClient(`/api/ai/quiz?subject=${subjectSlug}&query=${encodeURIComponent(prompt)}`)
       ]);
 
       if (cardsRes.ok && quizRes.ok) {

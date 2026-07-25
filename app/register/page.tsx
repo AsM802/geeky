@@ -20,11 +20,11 @@ export default function RegisterPage() {
     setLoading(true);
 
     try {
-      const API_URL = process.env.NEXT_PUBLIC_API_URL || 'https://api.geekyedu.in';
-      const res = await fetch(`${API_URL}/api/auth/signup`, {
+      // Prefer same-origin local API by default when NEXT_PUBLIC_API_URL is not set
+      const { fetchClient } = await import('../../lib/apiClient');
+      const res = await fetchClient('/api/auth/register', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name: fullName, username, email, password }),
+        body: JSON.stringify({ fullName, username, email, password }),
       });
       const data = await res.json();
 

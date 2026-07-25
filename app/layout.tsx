@@ -19,6 +19,7 @@ export default function RootLayout({
   const loadSession = async () => {
     if (typeof window !== 'undefined') {
       const stored = localStorage.getItem('geeky_session');
+      const accessToken = localStorage.getItem('geeky_access_token');
       if (stored) {
         try {
           setUser(JSON.parse(stored));
@@ -27,17 +28,25 @@ export default function RootLayout({
         setUser(null);
       }
 
+      if (!accessToken) {
+        return;
+      }
+
       // Fetch fresh data from API silently
       try {
-        const res = await fetchClient('/api/auth/me');
+        const res = await fetchClient('/api/auth/me', { skipAuthRedirect: true });
         if (res.ok) {
           const freshData = await res.json();
           const userObj = freshData.user || freshData;
           setUser(userObj);
           localStorage.setItem('geeky_session', JSON.stringify(userObj));
+        } else {
+          setUser(null);
+          localStorage.removeItem('geeky_session');
         }
       } catch (e) {
-        // Ignored, token will expire or refresh handles it
+        setUser(null);
+        localStorage.removeItem('geeky_session');
       }
     }
   };
@@ -100,145 +109,156 @@ export default function RootLayout({
     <html lang="en" className="dark">
       <body className="h-screen bg-black text-[#E8DCC8] flex overflow-hidden font-body">
         <div className="animated-bg" />
-        {/* Persistent Sidebar Navigation */}
-        <aside className={`relative flex flex-col bg-[#16213E] border-r border-[#B8860B]/30 flex-shrink-0 transition-all duration-300 ${
-          sidebarCollapsed ? 'w-16' : 'w-64'
-        }`}>
-          {/* Brand Header */}
-          <div className="flex items-center justify-between px-4 py-5 border-b border-white/10 h-16">
-            {!sidebarCollapsed ? (
-              <>
-                <Link href="/">
-                  <GeekyLogo collapsed={false} />
-                </Link>
-                <button
-                  onClick={() => setSidebarCollapsed(true)}
-                  className="w-6 h-6 rounded border border-[#B8860B]/40 text-[#D4AF37] hover:bg-white/5 flex items-center justify-center transition-colors text-xs"
-                  title="Collapse Sidebar"
-                >
-                  ←
-                </button>
-              </>
-            ) : (
-              <button
-                onClick={() => setSidebarCollapsed(false)}
-                className="w-full h-full flex items-center justify-center text-[#D4AF37] hover:bg-white/5 transition-colors text-lg"
-                title="Expand Sidebar"
-              >
-                <GeekyLogo collapsed={true} />
-              </button>
-            )}
-          </div>
-
-          {/* Sidebar Menu Items */}
-          <div className="flex-1 overflow-y-auto py-4 px-3 space-y-6 scrollbar-thin">
-            {/* Main Navigation */}
-            <div>
-              {!sidebarCollapsed && (
-                <p className="text-[10px] font-bold uppercase tracking-widest text-[#D4AF37]/70 px-2 mb-2">Main</p>
-              )}
-              <div className="space-y-1">
-                <Link
-                  href="/"
-                  className={`flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all ${
-                    pathname === '/' ? 'bg-[#0F3460] text-[#D4AF37] border border-[#B8860B]/40' : 'text-[#A0B2C6] hover:text-white hover:bg-white/5'
-                  }`}
-                >
-                  <span className="text-lg">📊</span>
-                  {!sidebarCollapsed && <span>Dashboard</span>}
-                </Link>
-
-                <Link
-                  href="/subject-learning-screen"
-                  className={`flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all ${
-                    pathname === '/subject-learning-screen' ? 'bg-[#0F3460] text-[#D4AF37] border border-[#B8860B]/40' : 'text-[#A0B2C6] hover:text-white hover:bg-white/5'
-                  }`}
-                >
-                  <span className="text-lg">📜</span>
-                  {!sidebarCollapsed && <span>Subjects</span>}
-                </Link>
-
-                <Link
-                  href="/debate-discussions"
-                  className={`flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all ${
-                    pathname === '/debate-discussions' ? 'bg-[#0F3460] text-[#D4AF37] border border-[#B8860B]/40' : 'text-[#A0B2C6] hover:text-white hover:bg-white/5'
-                  }`}
-                >
-                  <span className="text-lg">💬</span>
-                  {!sidebarCollapsed && (
-                    <div className="flex-1 flex items-center justify-between">
-                      <span>Debate & Discussions</span>
-                      <span className="text-[10px] font-bold bg-[#B8860B]/20 text-[#D4AF37] px-1.5 py-0.5 rounded-full">12</span>
-                    </div>
-                  )}
-                </Link>
-              </div>
-            </div>
-
-            {/* Subjects Quick Access */}
-            <div>
-              {!sidebarCollapsed && (
-                <p className="text-[10px] font-bold uppercase tracking-widest text-[#D4AF37]/70 px-2 mb-2">Subjects</p>
-              )}
-              <div className="space-y-1">
-                {subjectsList.map((sub) => (
-                  <Link
-                    key={sub.slug}
-                    href={`/subject-learning-screen?s=${sub.slug}`}
-                    className="flex items-center gap-3 px-3 py-2 rounded-lg text-xs font-medium text-[#A0B2C6] hover:text-white hover:bg-white/5 transition-all"
-                  >
-                    <span>{sub.icon}</span>
-                    {!sidebarCollapsed && (
-                      <div className="flex-1 flex items-center justify-between">
-                        <span>{sub.name}</span>
-                        {sub.badge && (
-                          <span className="text-[9px] font-bold bg-emerald-500/20 text-emerald-400 px-1.5 py-0.5 rounded-full">
-                            {sub.badge}
-                          </span>
-                        )}
-                      </div>
-                    )}
+        {/* Persistent Sidebar Navigation (only shown to authenticated users) */}
+        {user ? (
+          <aside className={`relative flex flex-col bg-[#16213E] border-r border-[#B8860B]/30 flex-shrink-0 transition-all duration-300 ${
+            sidebarCollapsed ? 'w-16' : 'w-64'
+          }`}>
+            {/* Brand Header */}
+            <div className="flex items-center justify-between px-4 py-5 border-b border-white/10 h-16">
+              {!sidebarCollapsed ? (
+                <>
+                  <Link href="/">
+                    <GeekyLogo collapsed={false} />
                   </Link>
-                ))}
-              </div>
-            </div>
-
-            {/* Account Links */}
-            <div>
-              {!sidebarCollapsed && (
-                <p className="text-[10px] font-bold uppercase tracking-widest text-[#D4AF37]/70 px-2 mb-2">Account</p>
+                  <button
+                    onClick={() => setSidebarCollapsed(true)}
+                    className="w-6 h-6 rounded border border-[#B8860B]/40 text-[#D4AF37] hover:bg-white/5 flex items-center justify-center transition-colors text-xs"
+                    title="Collapse Sidebar"
+                  >
+                    ←
+                  </button>
+                </>
+              ) : (
+                <button
+                  onClick={() => setSidebarCollapsed(false)}
+                  className="w-full h-full flex items-center justify-center text-[#D4AF37] hover:bg-white/5 transition-colors text-lg"
+                  title="Expand Sidebar"
+                >
+                  <GeekyLogo collapsed={true} />
+                </button>
               )}
-              <div className="space-y-1 text-xs text-[#A0B2C6]">
-                <Link href="/profile" className="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-white/5 cursor-pointer block">
-                  <span>🏆</span> {!sidebarCollapsed && <span>Leaderboard</span>}
-                </Link>
-                <Link href="/login" className="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-white/5 cursor-pointer block">
-                  <span>🔑</span> {!sidebarCollapsed && <span>Sign In</span>}
-                </Link>
+            </div>
+
+            {/* Sidebar Menu Items */}
+            <div className="flex-1 overflow-y-auto py-4 px-3 space-y-6 scrollbar-thin">
+              {/* Main Navigation */}
+              <div>
+                {!sidebarCollapsed && (
+                  <p className="text-[10px] font-bold uppercase tracking-widest text-[#D4AF37]/70 px-2 mb-2">Main</p>
+                )}
+                <div className="space-y-1">
+                  <Link
+                    href="/"
+                    className={`flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all ${
+                      pathname === '/' ? 'bg-[#0F3460] text-[#D4AF37] border border-[#B8860B]/40' : 'text-[#A0B2C6] hover:text-white hover:bg-white/5'
+                    }`}
+                  >
+                    <span className="text-lg">📊</span>
+                    {!sidebarCollapsed && <span>Dashboard</span>}
+                  </Link>
+
+                  {user && (
+                    <>
+                      <Link
+                        href="/subject-learning-screen"
+                        className={`flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all ${
+                          pathname === '/subject-learning-screen' ? 'bg-[#0F3460] text-[#D4AF37] border border-[#B8860B]/40' : 'text-[#A0B2C6] hover:text-white hover:bg-white/5'
+                        }`}
+                      >
+                        <span className="text-lg">📜</span>
+                        {!sidebarCollapsed && <span>Subjects</span>}
+                      </Link>
+ 
+                      <Link
+                        href="/debate-discussions"
+                        className={`flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all ${
+                          pathname === '/debate-discussions' ? 'bg-[#0F3460] text-[#D4AF37] border border-[#B8860B]/40' : 'text-[#A0B2C6] hover:text-white hover:bg-white/5'
+                        }`}
+                      >
+                        <span className="text-lg">💬</span>
+                        {!sidebarCollapsed && (
+                          <div className="flex-1 flex items-center justify-between">
+                            <span>Debate & Discussions</span>
+                            <span className="text-[10px] font-bold bg-[#B8860B]/20 text-[#D4AF37] px-1.5 py-0.5 rounded-full">12</span>
+                          </div>
+                        )}
+                      </Link>
+                    </>
+                  )}
+                </div>
+              </div>
+
+              {user && (
+                <div>
+                  {!sidebarCollapsed && (
+                    <p className="text-[10px] font-bold uppercase tracking-widest text-[#D4AF37]/70 px-2 mb-2">Subjects</p>
+                  )}
+                  <div className="space-y-1">
+                    {subjectsList.map((sub) => (
+                      <Link
+                        key={sub.slug}
+                        href={`/subject-learning-screen?s=${sub.slug}`}
+                        className="flex items-center gap-3 px-3 py-2 rounded-lg text-xs font-medium text-[#A0B2C6] hover:text-white hover:bg-white/5 transition-all"
+                      >
+                        <span>{sub.icon}</span>
+                        {!sidebarCollapsed && (
+                          <div className="flex-1 flex items-center justify-between">
+                            <span>{sub.name}</span>
+                            {sub.badge && (
+                              <span className="text-[9px] font-bold bg-emerald-500/20 text-emerald-400 px-1.5 py-0.5 rounded-full">
+                                {sub.badge}
+                              </span>
+                            )}
+                          </div>
+                        )}
+                      </Link>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Account Links */}
+              <div>
+                {!sidebarCollapsed && (
+                  <p className="text-[10px] font-bold uppercase tracking-widest text-[#D4AF37]/70 px-2 mb-2">Account</p>
+                )}
+                <div className="space-y-1 text-xs text-[#A0B2C6]">
+                    {user && (
+                      <Link href="/profile" className="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-white/5 cursor-pointer block">
+                        <span>🏆</span> {!sidebarCollapsed && <span>Leaderboard</span>}
+                      </Link>
+                    )}
+                    {!user && (
+                      <Link href="/login" className="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-white/5 cursor-pointer block">
+                        <span>🔑</span> {!sidebarCollapsed && <span>Sign In</span>}
+                      </Link>
+                    )}
+                </div>
               </div>
             </div>
-          </div>
 
-          {/* User Profile Footer */}
-          {!sidebarCollapsed && (
-            user ? (
-              <Link href="/profile" className="p-3 border-t border-white/10 bg-[#0F3460]/40 flex items-center gap-3 hover:bg-[#0F3460] transition-colors">
-                <div className="w-8 h-8 rounded-full bg-gradient-to-br from-[#B8860B] to-[#D4AF37] flex items-center justify-center font-bold text-xs text-[#1A1A2E]">
-                  {user.fullName.substring(0, 2).toUpperCase()}
-                </div>
-                <div className="flex-1 min-w-0">
-                  <p className="text-xs font-semibold text-white truncate">{user.fullName}</p>
-                  <p className="text-[10px] text-[#A0B2C6] truncate">Lvl {user.level} · {user.xp.toLocaleString()} XP</p>
-                </div>
-                <span className="text-orange-500 text-sm">🔥</span>
-              </Link>
-            ) : (
-              <Link href="/login" className="p-3 border-t border-white/10 bg-[#0F3460]/20 flex items-center justify-center gap-2 hover:bg-[#0F3460]/40 transition-colors text-xs text-[#D4AF37] font-semibold">
-                <span>🔑</span> Log In to Save Progress
-              </Link>
-            )
-          )}
-        </aside>
+            {/* User Profile Footer */}
+            {!sidebarCollapsed && (
+              user ? (
+                <Link href="/profile" className="p-3 border-t border-white/10 bg-[#0F3460]/40 flex items-center gap-3 hover:bg-[#0F3460] transition-colors">
+                  <div className="w-8 h-8 rounded-full bg-gradient-to-br from-[#B8860B] to-[#D4AF37] flex items-center justify-center font-bold text-xs text-[#1A1A2E]">
+                    {user.fullName.substring(0, 2).toUpperCase()}
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-xs font-semibold text-white truncate">{user.fullName}</p>
+                    <p className="text-[10px] text-[#A0B2C6] truncate">Lvl {user.level} · {user.xp.toLocaleString()} XP</p>
+                  </div>
+                  <span className="text-orange-500 text-sm">🔥</span>
+                </Link>
+              ) : (
+                <Link href="/login" className="p-3 border-t border-white/10 bg-[#0F3460]/20 flex items-center justify-center gap-2 hover:bg-[#0F3460]/40 transition-colors text-xs text-[#D4AF37] font-semibold">
+                  <span>🔑</span> Log In to Save Progress
+                </Link>
+              )
+            )}
+          </aside>
+        ) : null}
 
         {/* Main Application Area */}
         <div className="flex-1 flex flex-col min-w-0 overflow-hidden">

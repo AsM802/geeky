@@ -16,6 +16,7 @@ interface GodTheme {
 export default function DashboardHome() {
   const [user, setUser] = useState<{ fullName: string; username: string; level: number; xp: number; streak: number } | null>(null);
   const [activeTheme, setActiveTheme] = useState('athena');
+  const [sessionLoaded, setSessionLoaded] = useState(false);
 
   useEffect(() => {
     if (typeof window !== 'undefined') {
@@ -27,6 +28,7 @@ export default function DashboardHome() {
       }
       const savedTheme = localStorage.getItem('geeky_god_theme') || 'athena';
       setActiveTheme(savedTheme);
+      setSessionLoaded(true);
     }
   }, []);
 
@@ -34,6 +36,7 @@ export default function DashboardHome() {
   const streakDays = user ? user.streak : 14;
   const currentXp = user ? user.xp : 8420;
   const currentLvl = user ? user.level : 15; // Set fallback level to 15 to unlock Athena by default
+  const isLoggedIn = !!user;
 
   const activeSubjects = [
     { name: 'Philosophy', category: 'Humanities', progress: 68, activeDays: '8d', style: 'border-[#D4AF37]/40 bg-amber-500/5', badgeColor: 'bg-amber-500/20 text-[#D4AF37]' },
@@ -71,6 +74,110 @@ export default function DashboardHome() {
     setActiveTheme(theme.id);
     window.dispatchEvent(new Event('geeky_theme_update'));
   };
+
+  if (!sessionLoaded) {
+    return (
+      <div className="py-20 text-center text-[#A0B2C6]">
+        <p className="text-sm uppercase tracking-[0.35em] text-[#D4AF37]/70">Preparing your home view...</p>
+      </div>
+    );
+  }
+
+  if (!isLoggedIn) {
+    return (
+      <div className="space-y-8">
+        <section className="overflow-hidden rounded-[2rem] border border-[#B8860B]/30 bg-gradient-to-br from-[#0B1220] to-[#121C2E] p-8 shadow-[0_15px_50px_rgba(0,0,0,0.35)]">
+          <div className="max-w-4xl">
+            <span className="text-[10px] uppercase tracking-[0.35em] text-[#D4AF37]/70">Geeky Academy</span>
+            <h1 className="mt-4 text-4xl font-heading font-bold text-white sm:text-5xl">Learn smarter, debate sharper, and keep your progress in one place.</h1>
+            <p className="mt-5 max-w-2xl text-base leading-7 text-[#A0B2C6]">Geeky brings together curated subject paths, debate practice, and performance tracking for ambitious learners. Preview top subjects and sign in when you're ready to save your work.</p>
+            <div className="mt-8 flex flex-wrap gap-3">
+              <Link href="/register" className="inline-flex rounded-full bg-gradient-to-r from-[#B8860B] to-[#D4AF37] px-6 py-3 text-sm font-semibold text-[#1A1A2E] shadow-lg">Create free account</Link>
+              <Link href="/login" className="inline-flex rounded-full border border-[#D4AF37]/40 px-6 py-3 text-sm font-semibold text-[#D4AF37] hover:bg-white/5 transition">Sign in to continue</Link>
+            </div>
+          </div>
+
+          <div className="mt-10 grid gap-4 sm:grid-cols-3">
+            {[
+              { icon: '📜', title: 'Guided Subjects', desc: 'Explore subject modules, videos, and curated reading pathways.' },
+              { icon: '💬', title: 'Live Debates', desc: 'Join discussion arenas, stake positions, and learn from active reasoning.' },
+              { icon: '📈', title: 'Track Progress', desc: 'Save streaks, quizzes, and activity once you sign in.' },
+            ].map((feature) => (
+              <div key={feature.title} className="rounded-3xl border border-white/10 bg-[#16213E]/90 p-5 shadow-xl">
+                <div className="text-2xl">{feature.icon}</div>
+                <h3 className="mt-4 text-lg font-semibold text-white">{feature.title}</h3>
+                <p className="mt-2 text-sm text-[#A0B2C6]">{feature.desc}</p>
+              </div>
+            ))}
+          </div>
+        </section>
+
+        <section className="grid gap-6 lg:grid-cols-3">
+          <div className="rounded-3xl border border-white/10 bg-[#16213E]/90 p-6 shadow-xl">
+            <span className="text-[10px] uppercase tracking-[0.35em] text-[#D4AF37]/70">Why Geeky</span>
+            <h2 className="mt-4 text-2xl font-bold text-white">A smarter bundle for modern learners.</h2>
+            <p className="mt-3 text-sm text-[#A0B2C6]">Preview subject content, read research-driven summaries, and explore debate prompts before signing in.</p>
+            <ul className="mt-6 space-y-3 text-sm text-[#A0B2C6]">
+              <li>• Open subject previews and key topic overviews.</li>
+              <li>• Intelligent content discovery for competitive study.</li>
+              <li>• Join once to save streaks, scores, and themes.</li>
+            </ul>
+          </div>
+          <div className="rounded-3xl border border-white/10 bg-[#16213E]/90 p-6 shadow-xl">
+            <span className="text-[10px] uppercase tracking-[0.35em] text-[#D4AF37]/70">Featured subjects</span>
+            <h2 className="mt-4 text-2xl font-bold text-white">Start with these popular tracks.</h2>
+            <div className="mt-6 space-y-3">
+              {activeSubjects.slice(0, 4).map((sub) => (
+                <Link key={sub.name} href={`/subject-learning-screen?s=${sub.name.toLowerCase() === 'computer science' ? 'cs' : sub.name.toLowerCase()}`} className="block rounded-3xl border border-white/10 bg-black/30 p-4 text-sm text-white hover:border-[#D4AF37]/50 transition">
+                  <div className="flex items-center justify-between">
+                    <span>{sub.name}</span>
+                    <span className="text-[10px] text-[#A0B2C6]">{sub.activeDays}</span>
+                  </div>
+                  <p className="mt-2 text-[11px] text-[#A0B2C6]">{sub.category}</p>
+                </Link>
+              ))}
+            </div>
+          </div>
+          <div className="rounded-3xl border border-white/10 bg-[#16213E]/90 p-6 shadow-xl">
+            <span className="text-[10px] uppercase tracking-[0.35em] text-[#D4AF37]/70">Get started</span>
+            <h2 className="mt-4 text-2xl font-bold text-white">Preview content, then sign in to save your progress.</h2>
+            <p className="mt-3 text-sm text-[#A0B2C6]">Public previews and exploratory sections are available now. Sign in to unlock your personal dashboard, notes, and streak rewards.</p>
+            <div className="mt-6 space-y-3 text-sm text-[#A0B2C6]">
+              <div className="rounded-2xl border border-white/10 bg-black/30 p-4">Browse subjects and topic maps without logging in.</div>
+              <div className="rounded-2xl border border-white/10 bg-black/30 p-4">See debate formats and sample motions before joining.</div>
+            </div>
+          </div>
+        </section>
+
+        <section className="rounded-3xl border border-white/10 bg-[#16213E]/70 p-6 shadow-xl">
+          <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+            <div>
+              <span className="text-[10px] uppercase tracking-[0.35em] text-[#D4AF37]/70">Popular now</span>
+              <h2 className="mt-3 text-2xl font-bold text-white">Explore subject paths that students love.</h2>
+            </div>
+            <Link href="/subject-learning-screen" className="inline-flex items-center justify-center rounded-full border border-[#D4AF37]/30 px-4 py-2 text-sm text-[#D4AF37] hover:bg-white/5 transition">Browse all subjects</Link>
+          </div>
+          <div className="grid grid-cols-1 gap-4 mt-6 sm:grid-cols-2 xl:grid-cols-4">
+            {activeSubjects.map((sub, idx) => (
+              <Link key={idx} href={`/subject-learning-screen?s=${sub.name.toLowerCase() === 'computer science' ? 'cs' : sub.name.toLowerCase()}`} className={`group block rounded-3xl border border-white/10 p-5 transition hover:border-[#D4AF37]/50 ${sub.style}`}>
+                <div className="flex items-center justify-between">
+                  <span className={`text-[10px] font-bold uppercase tracking-widest ${sub.badgeColor}`}>{sub.category}</span>
+                  <span className="text-xl">{sub.name === 'Philosophy' ? '🏛️' : sub.name === 'Physics' ? '🌌' : sub.name === 'Neuroscience' ? '🧠' : sub.name === 'Economics' ? '📈' : '📚'}</span>
+                </div>
+                <div className="mt-6">
+                  <h3 className="text-lg font-bold text-white">{sub.name}</h3>
+                  <div className="mt-4 h-2 overflow-hidden rounded-full bg-white/10">
+                    <div className="h-full bg-[var(--accent-theme,#D4AF37)]" style={{ width: `${sub.progress}%` }}></div>
+                  </div>
+                  <p className="mt-3 text-sm text-[#A0B2C6]">Preview 25+ lessons, quizzes, and subject summaries.</p>
+                </div>
+              </Link>
+            ))}
+          </div>
+        </section>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">

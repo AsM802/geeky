@@ -1,9 +1,10 @@
 'use client';
-
-import React, { useState } from 'react';
-
+ 
+import React, { useState, useEffect } from 'react';
+import { fetchClient } from '@/lib/apiClient';
+ 
 interface Debate {
-  id: number;
+  id: string | number;
   author: string;
   avatar: string;
   stance: 'For' | 'Against' | 'Neutral';
@@ -68,38 +69,95 @@ const initialDebates: Debate[] = [
 
 export default function DebatePage() {
   const [debates, setDebates] = useState<Debate[]>(initialDebates);
+  const [loadingDebates, setLoadingDebates] = useState(true);
+  const [posting, setPosting] = useState(false);
+  const [voting, setVoting] = useState<Record<string | number, boolean>>({});
   const [motionText, setMotionText] = useState('');
   const [selectedTag, setSelectedTag] = useState('#Philosophy');
   const [selectedStance, setSelectedStance] = useState<'For' | 'Against' | 'Neutral'>('For');
   const [searchQuery, setSearchQuery] = useState('');
   const [subjectFilter, setSubjectFilter] = useState('All');
 
-  const handleVote = (id: number, type: 'support' | 'challenge') => {
-    setDebates((prev) =>
-      prev.map((d) => {
-        if (d.id !== id) return d;
-        let support = d.support;
-        let challenge = d.challenge;
-        let userVoted = d.userVoted;
-
-        if (userVoted === type) {
-          userVoted = null;
-          if (type === 'support') support--;
-          if (type === 'challenge') challenge--;
-        } else {
-          if (userVoted === 'support') support--;
-          if (userVoted === 'challenge') challenge--;
-          userVoted = type;
-          if (type === 'support') support++;
-          if (type === 'challenge') challenge++;
+  useEffect(() => {
+    async function loadDebates() {
+      try {
+        const res = await fetchClient('/api/debates');
+        if (!res.ok) throw new Error('Failed to load debates');
+        const data = await res.json();
+        if (Array.isArray(data) && data.length > 0) {
+          setDebates(data.map((item: any) => ({
+            id: item.id || item._id || item._id?.toString() || item.id,
+            author: item.author || item.user?.username || item.user?.name || 'Scholar',
+            avatar: item.avatar || item.user?.avatar || '🏛️',
+            stance: item.stance?.toString().toLowerCase() === 'against' ? 'Against' : item.stance?.toString().toLowerCase() === 'neutral' ? 'Neutral' : 'For',
+            countryCode: item.countryCode || item.country || 'EN',
+            title: item.title || item.subject || 'Debate Motion',
+            tag: item.tag || (item.subjectId ? `#${item.subjectId}` : '#Philosophy'),
+            content: item.content || item.body || 'No debate content provided.',
+            support: typeof item.support === 'number' ? item.support : item.likes || 0,
+            challenge: typeof item.challenge === 'number' ? item.challenge : item.dislikes || 0,
+            replies: typeof item.replies === 'number' ? item.replies : item.replyCount || 0,
+            tags: Array.isArray(item.tags) ? item.tags : [item.tag?.replace('#', '') || 'Debate'],
+            userVoted: null,
+          }))); 
         }
-        return { ...d, support, challenge, userVoted };
-      })
-    );
+      } catch (error) {
+        console.warn('Using fallback debate data:', error);
+      } finally {
+        setLoadingDebates(false);
+      }
+    }
+
+    loadDebates();
+  }, []);
+
+  const handleVote = async (id: string | number, type: 'support' | 'challenge') => {
+    const voteType = type === 'support' ? 'like' : 'dislike';
+    setVoting((prev) => ({ ...prev, [id]: true }));
+
+    const optimistic = debates.map((d) => {
+      if (d.id !== id) return d;
+      let support = d.support;
+      let challenge = d.challenge;
+      let userVoted = d.userVoted;
+
+      if (userVoted === type) {
+        userVoted = null;
+        if (type === 'support') support--;
+        if (type === 'challenge') challenge--;
+      } else {
+        if (userVoted === 'support') support--;
+        if (userVoted === 'challenge') challenge--;
+        userVoted = type;
+        if (type === 'support') support++;
+        if (type === 'challenge') challenge++;
+      }
+      return { ...d, support, challenge, userVoted };
+    });
+    setDebates(optimistic);
+
+    try {
+      const res = await fetchClient(`/api/debates/${id}/vote`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ voteType }),
+      });
+      if (!res.ok) {
+        throw new Error('Vote failed');
+      }
+    } catch (error) {
+      setDebates((prev) =>
+        prev.map((d) => (d.id !== id ? d : { ...d, userVoted: null }))
+      );
+    } finally {
+      setVoting((prev) => ({ ...prev, [id]: false }));
+    }
   };
 
-  const handlePostMotion = () => {
+  const handlePostMotion = async () => {
     if (!motionText.trim()) return;
+    setPosting(true);
+    const subjectId = selectedTag.replace('#', '').toLowerCase();
     const newDebate: Debate = {
       id: Date.now(),
       author: 'Agniv_Scholar',
@@ -112,11 +170,44 @@ export default function DebatePage() {
       support: 1,
       challenge: 0,
       replies: 0,
-      tags: [selectedTag.replace('#', '')],
+      tags: [subjectId],
       userVoted: 'support'
     };
+
     setDebates([newDebate, ...debates]);
-    setMotionText('');
+
+    try {
+      const res = await fetchClient('/api/debates', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          subjectId,
+          title: newDebate.title,
+          content: newDebate.content,
+          stance: newDebate.stance.toLowerCase(),
+        }),
+      });
+      if (!res.ok) {
+        throw new Error('Failed to publish motion');
+      }
+      const created = await res.json();
+      setDebates((prev) => [
+        {
+          ...newDebate,
+          id: created.id || created._id || prev[0].id,
+          author: created.author || newDebate.author,
+          support: typeof created.support === 'number' ? created.support : newDebate.support,
+          challenge: typeof created.challenge === 'number' ? created.challenge : newDebate.challenge,
+          replies: typeof created.replies === 'number' ? created.replies : newDebate.replies,
+        },
+        ...prev.slice(1),
+      ]);
+    } catch (error) {
+      console.warn('Publish motion failed, keeping local draft.', error);
+    } finally {
+      setPosting(false);
+      setMotionText('');
+    }
   };
 
   const filteredDebates = debates.filter((d) => {
@@ -231,17 +322,23 @@ export default function DebatePage() {
               </div>
               <button
                 onClick={handlePostMotion}
-                className="px-5 py-2 bg-gradient-to-r from-[#B8860B] to-[#D4AF37] text-[#1A1A2E] font-bold text-xs rounded-lg uppercase tracking-wider"
+                disabled={posting}
+                className={`px-5 py-2 text-[#1A1A2E] font-bold text-xs rounded-lg uppercase tracking-wider ${posting ? 'bg-[#B8860B]/60 cursor-not-allowed' : 'bg-gradient-to-r from-[#B8860B] to-[#D4AF37]'}`}
               >
-                Publish Motion
+                {posting ? 'Publishing…' : 'Publish Motion'}
               </button>
             </div>
           </div>
 
           {/* Debates Stream */}
           <div className="space-y-4">
-            {filteredDebates.map((d) => (
-              <div key={d.id} className="bg-[#16213E] border border-white/10 p-6 rounded-xl space-y-4 hover:border-[#D4AF37]/50 transition-all shadow-md">
+            {loadingDebates ? (
+              <div className="bg-[#16213E] border border-white/10 p-6 rounded-xl text-center text-[#A0B2C6]">Loading live debates from Geeky API...</div>
+            ) : filteredDebates.length === 0 ? (
+              <div className="bg-[#16213E] border border-white/10 p-6 rounded-xl text-center text-[#A0B2C6]">No debates found yet.</div>
+            ) : (
+              filteredDebates.map((d) => (
+                <div key={d.id} className="bg-[#16213E] border border-white/10 p-6 rounded-xl space-y-4 hover:border-[#D4AF37]/50 transition-all shadow-md">
                 <div className="flex justify-between items-start">
                   <div className="flex items-center gap-3">
                     <span className="w-10 h-10 rounded-full bg-[#B8860B]/10 border border-[#B8860B]/30 flex items-center justify-center text-lg">
@@ -278,21 +375,23 @@ export default function DebatePage() {
                   <div className="flex gap-3">
                     <button
                       onClick={() => handleVote(d.id, 'support')}
+                      disabled={!!voting[d.id]}
                       className={`flex items-center gap-1.5 px-3.5 py-1.5 rounded-full border text-[10px] font-bold transition-all ${
                         d.userVoted === 'support'
                           ? 'bg-emerald-500/25 border-emerald-500 text-emerald-400'
                           : 'border-white/10 text-[#A0B2C6] hover:border-emerald-500'
-                      }`}
+                      } ${voting[d.id] ? 'opacity-60 cursor-not-allowed' : ''}`}
                     >
                       🤝 Support ({d.support})
                     </button>
                     <button
                       onClick={() => handleVote(d.id, 'challenge')}
+                      disabled={!!voting[d.id]}
                       className={`flex items-center gap-1.5 px-3.5 py-1.5 rounded-full border text-[10px] font-bold transition-all ${
                         d.userVoted === 'challenge'
                           ? 'bg-red-500/25 border-red-500 text-red-400'
                           : 'border-white/10 text-[#A0B2C6] hover:border-red-500'
-                      }`}
+                      } ${voting[d.id] ? 'opacity-60 cursor-not-allowed' : ''}`}
                     >
                       ⚔️ Challenge ({d.challenge})
                     </button>
@@ -300,7 +399,7 @@ export default function DebatePage() {
                   <span className="text-[10px] text-[#6B7C93] font-semibold font-mono">💬 {d.replies} replies</span>
                 </div>
               </div>
-            ))}
+            )))}
           </div>
         </div>
 

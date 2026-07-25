@@ -61,7 +61,8 @@ export default function RecallPage() {
   const fetchFlashcards = async () => {
     setLoading(true);
     try {
-      const res = await fetch(`/api/recall/flashcards?s=${subjectSlug}`);
+      const { fetchClient } = await import('../../lib/apiClient');
+      const res = await fetchClient(`/api/recall/flashcards?s=${subjectSlug}`);
       const data = await res.json();
       if (!data.error) {
         setFlashcards(data);
@@ -86,9 +87,9 @@ export default function RecallPage() {
     }, 300);
 
     try {
-      await fetch('/api/recall/flashcards', {
+      const { fetchClient } = await import('../../lib/apiClient');
+      await fetchClient('/api/recall/flashcards', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ cardId: currentCard._id, score }),
       });
     } catch (_) {}
